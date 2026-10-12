@@ -1,36 +1,53 @@
+$ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Drawing
-$bitmap = New-Object System.Drawing.Bitmap 256,256
-$graphics = [System.Drawing.Graphics]::FromImage($bitmap)
-$graphics.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::AntiAlias
-$graphics.Clear([System.Drawing.Color]::FromArgb(53,120,246))
-$pen = New-Object System.Drawing.Pen ([System.Drawing.Color]::White),18
-$pen.StartCap = [System.Drawing.Drawing2D.LineCap]::Round
-$pen.EndCap = [System.Drawing.Drawing2D.LineCap]::Round
-$pen.LineJoin = [System.Drawing.Drawing2D.LineJoin]::Round
-$points = [System.Drawing.Point[]] @((New-Object System.Drawing.Point 50,76),(New-Object System.Drawing.Point 82,182),(New-Object System.Drawing.Point 128,100),(New-Object System.Drawing.Point 174,182),(New-Object System.Drawing.Point 206,76))
-$graphics.DrawLines($pen,$points)
-$stream = New-Object System.IO.MemoryStream
-$bitmap.Save($stream,[System.Drawing.Imaging.ImageFormat]::Png)
-$png = $stream.ToArray()
-[System.IO.File]::WriteAllBytes((Join-Path $PWD 'assets/icon.png'), $png)
-$ico = New-Object System.IO.MemoryStream
-$writer = New-Object System.IO.BinaryWriter $ico
-$writer.Write([uint16]0)
-$writer.Write([uint16]1)
-$writer.Write([uint16]1)
-$writer.Write([byte]0)
-$writer.Write([byte]0)
-$writer.Write([byte]0)
-$writer.Write([byte]0)
-$writer.Write([uint16]1)
-$writer.Write([uint16]32)
-$writer.Write([uint32]$png.Length)
-$writer.Write([uint32]22)
-$writer.Write($png)
-[System.IO.File]::WriteAllBytes((Join-Path $PWD 'assets/icon.ico'), $ico.ToArray())
-$writer.Dispose()
-$ico.Dispose()
-$stream.Dispose()
-$pen.Dispose()
-$graphics.Dispose()
-$bitmap.Dispose()
+$projectRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+$source = [System.Drawing.Image]::FromFile((Join-Path $projectRoot 'assets/logo.png'))
+$sizes = @(16, 24, 32, 48, 64, 128, 256)
+$images = @()
+try {
+  foreach ($size in $sizes) {
+    $bitmap = New-Object System.Drawing.Bitmap $size,$size
+    $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
+    $stream = New-Object System.IO.MemoryStream
+    try {
+      $graphics.Clear([System.Drawing.Color]::Transparent)
+      $graphics.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
+      $graphics.PixelOffsetMode = [System.Drawing.Drawing2D.PixelOffsetMode]::HighQuality
+      $graphics.DrawImage($source, 0, 0, $size, $size)
+      $bitmap.Save($stream, [System.Drawing.Imaging.ImageFormat]::Png)
+      $images += ,$stream.ToArray()
+      if ($size -eq 256) {
+        [System.IO.File]::WriteAllBytes((Join-Path $projectRoot 'assets/icon.png'), $stream.ToArray())
+      }
+    } finally {
+      $stream.Dispose()
+      $graphics.Dispose()
+      $bitmap.Dispose()
+    }
+  }
+  $ico = New-Object System.IO.MemoryStream
+  $writer = New-Object System.IO.BinaryWriter $ico
+  try {
+    $writer.Write([uint16]0)
+    $writer.Write([uint16]1)
+    $writer.Write([uint16]$sizes.Length)
+    $offset = 6 + 16 * $sizes.Length
+    for ($index = 0; $index -lt $sizes.Length; $index++) {
+      $dimension = if ($sizes[$index] -eq 256) { 0 } else { $sizes[$index] }
+      $writer.Write([byte]$dimension)
+      $writer.Write([byte]$dimension)
+      $writer.Write([byte]0)
+      $writer.Write([byte]0)
+      $writer.Write([uint16]1)
+      $writer.Write([uint16]32)
+      $writer.Write([uint32]$images[$index].Length)
+      $writer.Write([uint32]$offset)
+      $offset += $images[$index].Length
+    }
+    foreach ($png in $images) { $writer.Write([byte[]]$png) }
+    [System.IO.File]::WriteAllBytes((Join-Path $projectRoot 'assets/icon.ico'), $ico.ToArray())
+  } finally {
+    $writer.Dispose()
+    $ico.Dispose()
+  }
+} finally { $source.Dispose() }

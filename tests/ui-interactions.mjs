@@ -7,7 +7,7 @@ import { resolve, join } from 'node:path';
 
 const root = resolve(import.meta.dirname, '..');
 const runDirectory = join(root, '.test-data', `ui-interactions-${Date.now()}`);
-const dataDirectory = join(runDirectory, 'ApiWorkbench-data');
+const dataDirectory = join(runDirectory, 'SendIt-data');
 const screenshots = join(root, 'docs', 'screenshots');
 await mkdir(runDirectory, { recursive: true });
 await mkdir(screenshots, { recursive: true });
@@ -64,7 +64,7 @@ async function check(name, task) {
   }
 }
 async function launch() {
-  const env = { ...process.env, APIWORKBENCH_DATA_DIR: dataDirectory };
+  const env = { ...process.env, SENDIT_DATA_DIR: dataDirectory };
   delete env.ELECTRON_RUN_AS_NODE;
   app = await electron.launch({ args: ['.'], cwd: root, env, timeout: 60000 });
   page = await app.firstWindow();
@@ -258,7 +258,7 @@ try {
           .getByRole('button', { name: 'Dismiss notification', exact: true })
           .first()
           .click();
-      await page.screenshot({ path: join(screenshots, 'workbench-minimum-window.png') });
+      await page.screenshot({ path: join(screenshots, 'sendit-minimum-window.png') });
       await app.evaluate(({ BrowserWindow }) =>
         BrowserWindow.getAllWindows()[0].setSize(1440, 940),
       );
@@ -339,7 +339,7 @@ try {
       await dialog.getByRole('button', { name: 'Export backup', exact: true }).click();
       await expect.poll(() => existsSync(file)).toBe(true);
       const backup = JSON.parse(await readFile(file, 'utf8'));
-      expect(backup.format).toBe('apiworkbench-backup');
+      expect(backup.format).toBe('sendit-backup');
       expect(collection(backup.state).requests).toHaveLength(2);
       await dialog.getByRole('button', { name: 'Close dialog', exact: true }).click();
       await page.getByTestId('new-collection').click();

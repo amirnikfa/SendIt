@@ -20,6 +20,18 @@ afterEach(() => {
   for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
 });
 describe('transactional persistent state', () => {
+  it('updates the previous default title while preserving data and custom titles', () => {
+    const store = new Store(file(), codec);
+    const state = initialState();
+    state.settings.title = 'ApiWorkbench';
+    state.tabs[0].request.auth = { type: 'bearer', token: 'legacy-token' };
+    store.save(state);
+    expect(store.load()).toEqual({ ...state, settings: { ...state.settings, title: 'SendIt!' } });
+    state.settings.title = 'My API workspace';
+    store.save(state);
+    expect(store.load()).toEqual(state);
+    store.close();
+  });
   it('retains saved requests, drafts, environments and settings after reopen', () => {
     const path = file();
     let store = new Store(path, codec);

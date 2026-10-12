@@ -1,6 +1,6 @@
 # Architecture
 
-ApiWorkbench is a local Electron application. React + TypeScript + Zustand render the workbench. Vite bundles the renderer. Monaco is bundled locally; no CDN runtime dependency. Main and preload are built with esbuild. SQLite uses the runtime's built-in node:sqlite driver, avoiding native addon ABI mismatch.
+SendIt! is a local Electron application. React + TypeScript + Zustand render the workbench. Vite bundles the renderer. Monaco is bundled locally; no CDN runtime dependency. Main and preload are built with esbuild. SQLite uses the runtime's built-in node:sqlite driver, avoiding native addon ABI mismatch.
 
 ## Boundaries
 
@@ -16,7 +16,7 @@ The renderer sends typed request data to the main process. IPC input is validate
 
 ## Data
 
-A versioned workspace document is committed atomically in SQLite. The state includes workspace hierarchy, environments, settings, draft tabs and bounded request history. Runtime responses are transient unless explicitly saved. Portable runs use `<executable directory>/ApiWorkbench-data`; unpacked builds use their executable directory. Development uses the project data directory. A read-only location produces an explicit error with relocation instructions. Chromium's profile is placed inside this data directory as well.
+A versioned workspace document is committed atomically in SQLite. The state includes workspace hierarchy, environments, settings, draft tabs and bounded request history. Runtime responses are transient unless explicitly saved. Portable runs use `<executable directory>/SendIt-data`; unpacked builds use their executable directory. Development uses the project data directory. An existing data folder from the former app is reused if no SendIt-data folder exists. The former default title is updated; custom titles and encrypted credentials are preserved. Legacy backups and secret variable extensions remain readable. A read-only location produces an explicit error with relocation instructions. Chromium's profile is placed inside this data directory as well.
 
 Recognized credential fields and sensitive headers are individually encrypted with Electron safeStorage (Windows DPAPI); marked variable values receive the same protection. Cookies are encrypted as a complete jar. Other document fields remain plaintext. Encryption is bound to the Windows account. Explicit plaintext JSON backup/restore supports migration to another account. See SECURITY.md for the exact storage boundary and migration procedure.
 

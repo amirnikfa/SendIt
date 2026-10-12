@@ -23,7 +23,7 @@ Unsupported top-level, folder, item and request fields produce warnings. Example
 
 The internal explorer stores folders and requests separately. Relative folder order and request order survive within those lists, but export places folders before direct requests at each level. Collection IDs, original imported IDs, description MIME metadata and Postman cloud metadata are not preserved. Non-string variable values become deterministic string/JSON values. This is common-structure compatibility, not lossless archival of every Postman field. Use application backups for exact local-state archival.
 
-Collection secret flags use the optional `x-apiworkbench-secret` extension; environment exports use the familiar `type: "secret"` flag. The collection extension survives ApiWorkbench round trips and does not misuse the v2.1 variable type enumeration. Other clients may ignore the extension.
+Collection secret flags use the optional `x-sendit-secret` extension; environment exports use the familiar `type: "secret"` flag. The collection extension survives SendIt! round trips and does not misuse the v2.1 variable type enumeration. Other clients may ignore the extension.
 
 ## cURL
 

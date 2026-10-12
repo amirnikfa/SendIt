@@ -1,129 +1,129 @@
 {
   "mode": "development",
-  "started": "2026-10-11T12:18:01.668Z",
+  "started": "2026-10-12T10:45:34.014Z",
   "executablePath": "node_modules/electron/dist/electron.exe",
-  "runDirectory": "C:\\Users\\Amir\\Desktop\\postman\\.test-data\\e2e-development-1791721081667",
-  "fixture": "http://127.0.0.1:55492",
+  "runDirectory": "D:\\Projects\\postman\\source\\.test-data\\e2e-development-1791801934013",
+  "fixture": "http://127.0.0.1:52598",
   "checks": [
     {
       "name": "01 Launch the actual Electron application",
       "result": "passed",
-      "milliseconds": 1121
+      "milliseconds": 1803
     },
     {
       "name": "02 Create a new HTTP request through the tab UI",
       "result": "passed",
-      "milliseconds": 133
+      "milliseconds": 113
     },
     {
       "name": "03 Send a real GET request to the loopback fixture",
       "result": "passed",
-      "milliseconds": 136
+      "milliseconds": 195
     },
     {
       "name": "04 Display the actual JSON response and status",
       "result": "passed",
-      "milliseconds": 49
+      "milliseconds": 56
     },
     {
       "name": "05 Send a JSON POST from the Monaco body editor",
       "result": "passed",
-      "milliseconds": 434
+      "milliseconds": 462
     },
     {
       "name": "06 Add a custom request header and verify it at the server",
       "result": "passed",
-      "milliseconds": 91
+      "milliseconds": 92
     },
     {
       "name": "07 Edit query parameters and verify URL synchronization",
       "result": "passed",
-      "milliseconds": 100
+      "milliseconds": 99
     },
     {
       "name": "08 Configure Bearer authentication and verify the Authorization header",
       "result": "passed",
-      "milliseconds": 84
+      "milliseconds": 95
     },
     {
       "name": "09 Save the request into a collection using the UI",
       "result": "passed",
-      "milliseconds": 642
+      "milliseconds": 645
     },
     {
       "name": "10 Close and restart Electron with the same data directory",
       "result": "passed",
-      "milliseconds": 658
+      "milliseconds": 716
     },
     {
       "name": "11 Restore the saved collection and request after restart",
       "result": "passed",
-      "milliseconds": 8
+      "milliseconds": 12
     },
     {
       "name": "12 Create an environment and variable in the UI",
       "result": "passed",
-      "milliseconds": 692
+      "milliseconds": 704
     },
     {
       "name": "13 Select the environment and reference its variable in the URL",
       "result": "passed",
-      "milliseconds": 14
+      "milliseconds": 16
     },
     {
       "name": "14 Execute the variable-based request successfully",
       "result": "passed",
-      "milliseconds": 128
+      "milliseconds": 121
     },
     {
       "name": "15 Import a valid Postman v2.1 collection through the file dialog",
       "result": "passed",
-      "milliseconds": 689
+      "milliseconds": 715
     },
     {
       "name": "16 Export a collection using the native save dialog and validate the file",
       "result": "passed",
-      "milliseconds": 8
+      "milliseconds": 7
     },
     {
       "name": "17 Switch light/dark themes and capture actual rendered screenshots",
       "result": "passed",
-      "milliseconds": 1536
+      "milliseconds": 1586
     },
     {
       "name": "18 Open and close a request tab through keyboard/UI controls",
       "result": "passed",
-      "milliseconds": 804
+      "milliseconds": 807
     },
     {
       "name": "19 Execute a real post-response assertion and display its pass result",
       "result": "passed",
-      "milliseconds": 304
+      "milliseconds": 353
     },
     {
       "name": "20 Display a meaningful transport failure from a disconnected server",
       "result": "passed",
-      "milliseconds": 40
+      "milliseconds": 48
     },
     {
       "name": "21 Upload a selected binary file through the picker and verify exact server bytes",
       "result": "passed",
-      "milliseconds": 167
+      "milliseconds": 163
     },
     {
       "name": "22 Portable executable startup",
       "result": "requires-packaged-run",
-      "note": "Development Electron run does not establish portable executable startup. Run with APIWORKBENCH_EXE or consult the separate release smoke report."
+      "note": "Development Electron run does not establish portable executable startup. Run with SENDIT_EXE or consult the separate release smoke report."
     },
     {
       "name": "23 Connect a WebSocket, send a real message, observe echo and disconnect",
       "result": "passed",
-      "milliseconds": 464
+      "milliseconds": 514
     },
     {
       "name": "24 Receive split-UTF-8 and multiple SSE frames, then close the stream",
       "result": "passed",
-      "milliseconds": 390
+      "milliseconds": 418
     },
     {
       "name": "25 Enforce isolated renderer, sandbox and a constrained preload bridge",
@@ -133,7 +133,7 @@
   ],
   "rendererErrors": [],
   "nativeDialogs": "Open/save dialogs return predetermined local paths; controls, request execution and file I/O remain real.",
-  "finished": "2026-10-11T12:18:10.454Z",
+  "finished": "2026-10-12T10:45:43.858Z",
   "error": "",
-  "dataDirectory": "C:\\Users\\Amir\\Desktop\\postman\\.test-data\\e2e-development-1791721081667\\ApiWorkbench-data"
+  "dataDirectory": "D:\\Projects\\postman\\source\\.test-data\\e2e-development-1791801934013\\SendIt-data"
 }

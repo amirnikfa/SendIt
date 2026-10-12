@@ -579,7 +579,7 @@ function SettingsDialog({ close }: { close: () => void }) {
   return (
     <Modal
       title="Settings"
-      subtitle={`ApiWorkbench ${store.version} · Local by design`}
+      subtitle={`SendIt! ${store.version} · Local by design`}
       width={700}
       onClose={close}
       footer={

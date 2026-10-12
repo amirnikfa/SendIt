@@ -50,7 +50,7 @@ function input(path = '/echo'): ExecutionInput {
 }
 
 beforeAll(async () => {
-  temp = await mkdtemp(join(tmpdir(), 'apiworkbench-tests-'));
+  temp = await mkdtemp(join(tmpdir(), 'sendit-tests-'));
   other = http.createServer((req, res) => {
     res.setHeader('content-type', 'application/json');
     res.end(JSON.stringify({ headers: req.headers, url: req.url }));

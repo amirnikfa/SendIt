@@ -1,10 +1,10 @@
 {
-  "name": "apiworkbench",
+  "name": "sendit",
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "An offline-first API development workbench for Windows",
-  "author": "ApiWorkbench contributors",
+  "description": "SendIt! — a local API client for Windows",
+  "author": "Amirhosein Nikfallah",
   "license": "MIT",
   "main": "build/main/index.cjs",
   "scripts": {

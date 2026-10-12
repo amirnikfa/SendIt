@@ -1,8 +1,8 @@
 {
-  "artifact": "C:\\Users\\Amir\\Desktop\\postman\\dist\\ApiWorkbench-Portable-Win-x64.exe",
-  "size": 104623476,
-  "sha256": "59c1ba66c08e7ad2fd406a08df038c0260188e961a076c84e593f3f724edd24a",
-  "started": "2026-10-11T11:31:52.667Z",
+  "artifact": "D:\\Projects\\postman\\source\\dist\\SendIt-Portable-Win-x64.exe",
+  "size": 104911277,
+  "sha256": "c9c829c6b0adb00455adcf96dc0db0926f8d4700d3c6c08dfec833fce781d612",
+  "started": "2026-10-12T10:47:38.992Z",
   "checks": [
     {
       "name": "Portable launcher starts directly with its bundled runtime",
@@ -38,9 +38,9 @@
     }
   ],
   "runtime": "Chrome/152.0.7977.130",
-  "dataDirectory": "C:\\Users\\Amir\\Desktop\\postman\\.test-data\\portable-release-1791718312542\\ApiWorkbench-data",
+  "dataDirectory": "D:\\Projects\\postman\\source\\.test-data\\portable-release-1791802058873\\SendIt-data",
   "error": "",
   "windowsVersion": "10.0.26200",
   "architecture": "x64",
-  "finished": "2026-10-11T11:32:12.222Z"
+  "finished": "2026-10-12T10:47:58.868Z"
 }

@@ -7,8 +7,8 @@ import { resolve, join, dirname, basename } from 'node:path';
 import { WebSocketServer } from 'ws';
 
 const root = resolve(import.meta.dirname, '..');
-const executablePath = process.env.APIWORKBENCH_EXE
-  ? resolve(process.env.APIWORKBENCH_EXE)
+const executablePath = process.env.SENDIT_EXE
+  ? resolve(process.env.SENDIT_EXE)
   : undefined;
 const mode = executablePath ? 'portable' : 'development';
 const runDirectory = join(root, '.test-data', `e2e-${mode}-${Date.now()}`);
@@ -73,13 +73,13 @@ const fixture = createServer((req, res) => {
     received.push(entry);
     res.writeHead(200, {
       'Content-Type': 'application/json; charset=utf-8',
-      'X-Fixture': 'ApiWorkbench',
+      'X-Fixture': 'SendIt!',
       'Set-Cookie': 'fixture=accepted; HttpOnly; SameSite=Lax; Path=/',
     });
     res.end(
       JSON.stringify(
         {
-          message: 'ApiWorkbench local fixture',
+          message: 'SendIt! local fixture',
           method: req.method,
           path: req.url,
           headers: req.headers,
@@ -134,8 +134,8 @@ async function check(name, task) {
 async function launch() {
   const env = { ...process.env };
   delete env.ELECTRON_RUN_AS_NODE;
-  delete env.APIWORKBENCH_DATA_DIR;
-  if (!executablePath) env.APIWORKBENCH_DATA_DIR = join(runDirectory, 'ApiWorkbench-data');
+  delete env.SENDIT_DATA_DIR;
+  if (!executablePath) env.SENDIT_DATA_DIR = join(runDirectory, 'SendIt-data');
   electronApp = await electron.launch({
     ...(executablePath ? { executablePath, args: [] } : { args: ['.'] }),
     cwd: root,
@@ -150,9 +150,9 @@ async function launch() {
   expect(boot.dataDirectory).toBeTruthy();
   report.dataDirectory = boot.dataDirectory;
   if (executablePath) {
-    portableDataDirectory ??= resolve(dirname(executablePath), 'ApiWorkbench-data');
+    portableDataDirectory ??= resolve(dirname(executablePath), 'SendIt-data');
     expect(resolve(boot.dataDirectory).toLowerCase()).toBe(portableDataDirectory.toLowerCase());
-  } else expect(resolve(boot.dataDirectory)).toBe(resolve(runDirectory, 'ApiWorkbench-data'));
+  } else expect(resolve(boot.dataDirectory)).toBe(resolve(runDirectory, 'SendIt-data'));
 }
 
 async function snapshot() {
@@ -215,7 +215,7 @@ try {
     expect(request.url).toBe('/echo?source=workbench');
   });
   await check('04 Display the actual JSON response and status', async () => {
-    await expect(page.getByTestId('response-body')).toContainText('ApiWorkbench local fixture');
+    await expect(page.getByTestId('response-body')).toContainText('SendIt! local fixture');
     await expect(page.getByTestId('response-status')).toContainText('200 OK');
   });
   await check('05 Send a JSON POST from the Monaco body editor', async () => {
@@ -387,13 +387,13 @@ try {
       '.collection-row .tree-item-button[aria-expanded="false"]',
     );
     while (await collapsedCollections.count()) await collapsedCollections.first().click();
-    await page.screenshot({ path: join(screenshots, 'workbench-dark.png') });
+    await page.screenshot({ path: join(screenshots, 'sendit-dark.png') });
     await page.getByTestId('settings').click();
     const dialog = page.getByRole('dialog', { name: /Settings/i });
     await dialog.getByRole('button', { name: 'Light', exact: true }).click();
     await dialog.getByRole('button', { name: 'Close dialog' }).click();
     await persisted((state) => state.settings.theme === 'light');
-    await page.screenshot({ path: join(screenshots, 'workbench-light.png') });
+    await page.screenshot({ path: join(screenshots, 'sendit-light.png') });
     await page.getByTestId('settings').click();
     await page
       .getByRole('dialog', { name: /Settings/i })
@@ -417,7 +417,7 @@ try {
     await page.getByRole('button', { name: 'Post-response', exact: true }).click();
     await setCode(
       'Post-response script',
-      'pm.test("Fixture response is real", () => { pm.response.to.have.status(200); pm.expect(pm.response.json().message).to.eql("ApiWorkbench local fixture"); });',
+      'pm.test("Fixture response is real", () => { pm.response.to.have.status(200); pm.expect(pm.response.json().message).to.eql("SendIt! local fixture"); });',
     );
     await send();
     await page
@@ -440,7 +440,7 @@ try {
     '21 Upload a selected binary file through the picker and verify exact server bytes',
     async () => {
       const file = join(runDirectory, 'upload.bin');
-      const content = Buffer.from('ApiWorkbench upload fixture\u0000\u00ff', 'utf8');
+      const content = Buffer.from('SendIt! upload fixture\u0000\u00ff', 'utf8');
       await writeFile(file, content);
       await stubOpen(file);
       await page.getByTestId('url').fill(`${baseUrl}/upload`);
@@ -458,7 +458,7 @@ try {
       async () => {
         expect(existsSync(executablePath)).toBe(true);
         expect(report.dataDirectory.toLowerCase()).toBe(
-          join(dirname(executablePath), 'ApiWorkbench-data').toLowerCase(),
+          join(dirname(executablePath), 'SendIt-data').toLowerCase(),
         );
         expect(await electronApp.evaluate(({ app }) => app.isPackaged)).toBe(true);
       },
@@ -467,7 +467,7 @@ try {
     report.checks.push({
       name: '22 Portable executable startup',
       result: 'requires-packaged-run',
-      note: 'Development Electron run does not establish portable executable startup. Run with APIWORKBENCH_EXE or consult the separate release smoke report.',
+      note: 'Development Electron run does not establish portable executable startup. Run with SENDIT_EXE or consult the separate release smoke report.',
     });
   await check(
     '23 Connect a WebSocket, send a real message, observe echo and disconnect',

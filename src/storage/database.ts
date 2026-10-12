@@ -67,10 +67,12 @@ export class Store {
       return state;
     }
     try {
-      return stateSchema.parse(transform(stored, this.codec, false));
+      const state = stateSchema.parse(transform(stored, this.codec, false));
+      if (state.settings.title === 'ApiWorkbench') state.settings.title = 'SendIt!';
+      return state;
     } catch (error) {
       throw new Error(
-        `Could not open workspace data. Preserve ApiWorkbench-data and restore a backup. Windows-encrypted secrets require the original Windows account. ${error instanceof Error ? error.message : ''}`,
+        `Could not open workspace data. Preserve SendIt-data and restore a backup. Windows-encrypted secrets require the original Windows account. ${error instanceof Error ? error.message : ''}`,
       );
     }
   }

@@ -1,4 +1,7 @@
 import { build } from 'esbuild';
+import { mkdir, copyFile } from 'node:fs/promises';
+await mkdir('build/assets', { recursive: true });
+await copyFile('assets/icon.png', 'build/assets/icon.png');
 await build({
   entryPoints: ['src/main/index.ts'],
   outfile: 'build/main/index.cjs',

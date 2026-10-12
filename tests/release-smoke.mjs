@@ -7,10 +7,10 @@ import { resolve, join } from 'node:path';
 import { release, arch } from 'node:os';
 
 const root = resolve(import.meta.dirname, '..');
-const artifact = join(root, 'dist', 'ApiWorkbench-Portable-Win-x64.exe');
+const artifact = join(root, 'dist', 'SendIt-Portable-Win-x64.exe');
 const folder = join(root, '.test-data', `portable-release-${Date.now()}`);
 await mkdir(folder, { recursive: true });
-const executable = join(folder, 'ApiWorkbench-Portable-Win-x64.exe');
+const executable = join(folder, 'SendIt-Portable-Win-x64.exe');
 await copyFile(artifact, executable);
 const report = {
   artifact,
@@ -34,7 +34,7 @@ const fixture = createServer((req, res) => {
   res.end(
     JSON.stringify(
       {
-        service: 'ApiWorkbench release verification',
+        service: 'SendIt! release verification',
         status: 'operational',
         method: req.method,
         path: req.url,
@@ -52,7 +52,7 @@ const debugPort = portServer.address().port;
 await new Promise((done) => portServer.close(done));
 const env = { ...process.env };
 delete env.ELECTRON_RUN_AS_NODE;
-delete env.APIWORKBENCH_DATA_DIR;
+delete env.SENDIT_DATA_DIR;
 delete env.NODE_PATH;
 let child;
 let browser;
@@ -128,7 +128,7 @@ try {
     const boot = await page.evaluate(() => window.workbench.load());
     report.dataDirectory = boot.dataDirectory;
     expect(resolve(boot.dataDirectory).toLowerCase()).toBe(
-      join(folder, 'ApiWorkbench-data').toLowerCase(),
+      join(folder, 'SendIt-data').toLowerCase(),
     );
     expect((await stat(join(boot.dataDirectory, 'workbench.sqlite'))).size).toBeGreaterThan(0);
   });
@@ -140,7 +140,7 @@ try {
     await page.getByTestId('send').click();
     await expect(page.getByTestId('response-status')).toContainText('200 OK', { timeout: 30000 });
     await expect(page.getByTestId('response-body')).toContainText(
-      'ApiWorkbench release verification',
+      'SendIt! release verification',
     );
   });
   await check('Packaged selector shows all methods and executes a real POST', async () => {

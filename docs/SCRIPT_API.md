@@ -1,6 +1,6 @@
 # Script runtime and supported APIs
 
-ApiWorkbench runs pre-request and post-response JavaScript in a new QuickJS WebAssembly runtime. The runtime exposes no Node.js, Electron, filesystem, HTTP, `fetch`, module loader, timers, or renderer objects. This follows the isolation and resource-control interfaces documented by [quickjs-emscripten](https://github.com/justjake/quickjs-emscripten). Native `eval`/`Function` stay inside the guest runtime and cannot obtain host privileges.
+SendIt! runs pre-request and post-response JavaScript in a new QuickJS WebAssembly runtime. The runtime exposes no Node.js, Electron, filesystem, HTTP, `fetch`, module loader, timers, or renderer objects. This follows the isolation and resource-control interfaces documented by [quickjs-emscripten](https://github.com/justjake/quickjs-emscripten). Native `eval`/`Function` stay inside the guest runtime and cannot obtain host privileges.
 
 Each script is limited to 500 ms, 16 MB guest memory, 512 KB stack, 256 KB source, 1,000 test cases, and 200 console messages of up to 4,000 characters each. All scripts attached to one request share a 2-second execution budget. Script input, including the response text, is limited to 5 MB; larger responses remain available in the response viewer but produce a clear script-input-limit error. No asynchronous job queue is run. Async test callbacks produce a failed test rather than a false pass.
 

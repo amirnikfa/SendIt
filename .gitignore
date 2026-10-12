@@ -1,6 +1,7 @@
 node_modules/
 build/
 dist/
+SendIt-data/
 ApiWorkbench-data/
 .test-data/
 research/

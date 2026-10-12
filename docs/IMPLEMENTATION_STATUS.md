@@ -1,4 +1,4 @@
-# Implementation report — ApiWorkbench 1.0.0
+# Implementation report — SendIt! 1.0.0
 
 Research and delivery date: 2026-10-11. This is an independent, account-free Windows API client with original branding. The implemented scope below is functional; it is not complete Postman parity. Acceptance evidence is recorded in [TEST_REPORT.md](TEST_REPORT.md).
 

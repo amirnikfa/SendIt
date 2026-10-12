@@ -1,6 +1,7 @@
 import { app, BrowserWindow, dialog, ipcMain, safeStorage, session } from 'electron';
 import { join, dirname, basename, resolve } from 'node:path';
 import {
+  existsSync,
   mkdirSync,
   writeFileSync,
   unlinkSync,
@@ -26,13 +27,18 @@ import { LiveEngine } from '../networking/live';
 import { importText, exportCollection, exportEnvironment } from '../services/interchange';
 
 // The portable launcher extracts program files to TEMP; persistent data belongs beside the launcher.
-const dataDirectory = process.env.APIWORKBENCH_DATA_DIR
-  ? resolve(process.env.APIWORKBENCH_DATA_DIR)
-  : join(
-      process.env.PORTABLE_EXECUTABLE_DIR ||
-        (app.isPackaged ? dirname(app.getPath('exe')) : app.getAppPath()),
-      'ApiWorkbench-data',
-    );
+const dataRoot =
+  process.env.PORTABLE_EXECUTABLE_DIR ||
+  (app.isPackaged ? dirname(app.getPath('exe')) : app.getAppPath());
+const dataOverride = process.env.SENDIT_DATA_DIR || process.env.APIWORKBENCH_DATA_DIR;
+const newDataDirectory = join(dataRoot, 'SendIt-data');
+const legacyDataDirectory = join(dataRoot, 'ApiWorkbench-data');
+// Reuse an existing workspace after the rename, including its encrypted credentials.
+const dataDirectory = dataOverride
+  ? resolve(dataOverride)
+  : existsSync(newDataDirectory) || !existsSync(legacyDataDirectory)
+    ? newDataDirectory
+    : legacyDataDirectory;
 let startupError: unknown;
 try {
   mkdirSync(dataDirectory, { recursive: true });
@@ -45,7 +51,7 @@ try {
 } catch (error) {
   startupError = error;
 }
-app.setName('ApiWorkbench');
+app.setName('SendIt!');
 let window: BrowserWindow;
 let store: Store;
 let engine: HttpEngine;
@@ -194,10 +200,10 @@ function registerIpc() {
   );
   handle('app:backup', () =>
     writeDialog(
-      'ApiWorkbench-backup.json',
+      'SendIt-backup.json',
       JSON.stringify(
         {
-          format: 'apiworkbench-backup',
+          format: 'sendit-backup',
           version: 1,
           state: store.load(),
           cookies: engine.serializeCookies(),
@@ -209,11 +215,11 @@ function registerIpc() {
     ),
   );
   handle('app:restore', async () => {
-    const text = await readDialog('Restore ApiWorkbench backup');
+    const text = await readDialog('Restore SendIt! backup');
     if (text === null) return false;
     const backup = z
       .object({
-        format: z.literal('apiworkbench-backup'),
+        format: z.enum(['sendit-backup', 'apiworkbench-backup']),
         version: z.literal(1),
         state: stateSchema,
         cookies: z.string().optional(),
@@ -276,7 +282,7 @@ app
     if (startupError) {
       dialog.showErrorBox(
         'Portable data directory is not writable',
-        `Move ApiWorkbench to a writable folder and launch again. No profile fallback was used.\n\n${dataDirectory}\n${String(startupError)}`,
+        `Move SendIt! to a writable folder and launch again. No profile fallback was used.\n\n${dataDirectory}\n${String(startupError)}`,
       );
       app.quit();
       return;
@@ -318,7 +324,8 @@ app
       show: false,
       frame: false,
       backgroundColor: '#151719',
-      title: 'ApiWorkbench',
+      title: 'SendIt!',
+      icon: join(__dirname, '../assets/icon.png'),
       webPreferences: {
         preload: join(__dirname, '../preload/index.cjs'),
         nodeIntegration: false,
@@ -348,7 +355,7 @@ app
     window.show();
   })
   .catch((error) => {
-    dialog.showErrorBox('ApiWorkbench could not start', String(error));
+    dialog.showErrorBox('SendIt! could not start', String(error));
     app.quit();
   });
 app.on('window-all-closed', () => app.quit());

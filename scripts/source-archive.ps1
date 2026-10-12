@@ -1,6 +1,6 @@
 $ErrorActionPreference = 'Stop'
 $projectRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
-$archivePath = Join-Path $projectRoot 'dist\ApiWorkbench-Source.zip'
+$archivePath = Join-Path $projectRoot 'dist\SendIt-Source.zip'
 New-Item -ItemType Directory -Path (Join-Path $projectRoot 'dist') -Force | Out-Null
 $sourceEntries = @(
   'src', 'tests', 'docs', 'assets', 'scripts',
@@ -16,7 +16,7 @@ try {
   if ($LASTEXITCODE -ne 0) { throw 'Source archive creation failed.' }
   $archiveItems = & tar.exe -tf $archivePath
   if ($LASTEXITCODE -ne 0) { throw 'Source archive verification failed.' }
-  if ($archiveItems | Where-Object { $_ -match '^(node_modules|research|dist|\.test-data|ApiWorkbench-data)/' }) {
+  if ($archiveItems | Where-Object { $_ -match '^(node_modules|research|dist|\.test-data|SendIt-data)/' }) {
     throw 'Unexpected private or generated content in source archive.'
   }
   if ($archiveItems -notcontains 'src/main/index.ts') { throw 'Source archive is incomplete.' }

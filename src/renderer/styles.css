@@ -360,10 +360,13 @@ kbd {
   justify-content: center;
   width: 25px;
   height: 25px;
-  background: linear-gradient(145deg, #407cdf, #51b4d7);
   color: white;
   border-radius: 7px;
-  box-shadow: inset 0 0 0 1px #ffffff20;
+}
+.brand-symbol img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 .local-badge {
   font-size: 8px;

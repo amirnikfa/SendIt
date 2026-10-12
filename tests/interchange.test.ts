@@ -198,7 +198,10 @@ describe('Postman collection interchange', () => {
     collection.variables = [{ ...pair('token', 'sensitive'), secret: true }];
     const exported = exportCollection(collection) as { variable: Record<string, unknown>[] };
     expect(exported.variable[0].type).toBeUndefined();
-    expect(exported.variable[0]['x-apiworkbench-secret']).toBe(true);
+    expect(exported.variable[0]['x-sendit-secret']).toBe(true);
+    expect(importText(JSON.stringify(exported)).collections[0].variables[0].secret).toBe(true);
+    exported.variable[0]['x-apiworkbench-secret'] = true;
+    delete exported.variable[0]['x-sendit-secret'];
     expect(importText(JSON.stringify(exported)).collections[0].variables[0].secret).toBe(true);
   });
 

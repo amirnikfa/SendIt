@@ -1,5 +1,5 @@
-appId: dev.apiworkbench.desktop
-productName: ApiWorkbench
+appId: dev.sendit.desktop
+productName: SendIt!
 directories:
   output: dist
 files:
@@ -11,7 +11,7 @@ win:
   target:
     - target: portable
       arch: [x64]
-  artifactName: ApiWorkbench-Portable-Win-x64.exe
+  artifactName: SendIt-Portable-Win-x64.exe
   signAndEditExecutable: true
 portable:
   requestExecutionLevel: user

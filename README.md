@@ -1,16 +1,18 @@
-# ApiWorkbench
+# SendIt!
+
+<img src="assets/logo.png" alt="SendIt! logo" width="112" />
 
 A local Windows desktop workspace for building, sending, organizing and testing API requests. No account, telemetry or application server is required. This is an independent application with original branding, informed by documented API-client workflows; it is not affiliated with Postman.
 
-![ApiWorkbench dark workbench](docs/screenshots/workbench-dark.png)
+![SendIt! dark theme](docs/screenshots/sendit-dark.png)
 
 ## Portable Windows release
 
-Run **`dist/ApiWorkbench-Portable-Win-x64.exe`** on Windows 10/11 x64. No installation wizard, administrator privileges, Node.js, npm or Python are required. The launcher temporarily extracts its bundled Electron runtime. Keep the executable in a writable directory; persistent data lives in **`ApiWorkbench-data` beside the EXE**. First launch may take longer while the runtime is extracted.
+Run **`dist/SendIt-Portable-Win-x64.exe`** on Windows 10/11 x64. No installation wizard, administrator privileges, Node.js, npm or Python are required. The launcher temporarily extracts its bundled Electron runtime. Keep the executable in a writable directory; persistent data lives in **`SendIt-data` beside the EXE**. First launch may take longer while the runtime is extracted.
 
-The executable is unsigned. The delivered release is **104,623,476 bytes**, verified by direct launch and restart on Windows 11 Pro x64 (10.0.26200). Windows 10 is targeted but not individually tested. SHA-256: `59c1ba66c08e7ad2fd406a08df038c0260188e961a076c84e593f3f724edd24a`. Detailed evidence is in [TEST_REPORT.md](docs/TEST_REPORT.md) and `dist/RELEASE.json`.
+The executable is unsigned. The delivered release is **104,911,277 bytes**, verified by direct launch and restart on Windows 11 Pro x64 (10.0.26200). Windows 10 is targeted but not individually tested. SHA-256: `c9c829c6b0adb00455adcf96dc0db0926f8d4700d3c6c08dfec833fce781d612`. Detailed evidence is in [TEST_REPORT.md](docs/TEST_REPORT.md) and `dist/RELEASE.json`.
 
-The complete source archive is `dist/ApiWorkbench-Source.zip`. Extract it, then run the build commands below to recreate a release. The source archive intentionally excludes dependencies, generated program files, test workspace data and proprietary research imagery.
+The complete source archive is `dist/SendIt-Source.zip`. Extract it, then run the build commands below to recreate a release. The source archive intentionally excludes dependencies, generated program files, test workspace data and proprietary research imagery.
 
 ## Features
 
@@ -27,7 +29,17 @@ The complete source archive is `dist/ApiWorkbench-Source.zip`. Extract it, then 
 - Separate WebSocket and SSE live tools with headers, authentication, variable resolution, TLS/proxy settings and bounded event logs.
 - Native response/file saving, explicit JSON backup/restore and Windows-protected recognized credentials.
 
-![Light theme](docs/screenshots/workbench-light.png)
+![SendIt! light theme](docs/screenshots/sendit-light.png)
+
+## Screenshots
+
+| Request tests                                                     | Collection runner                                                    |
+| ----------------------------------------------------------------- | -------------------------------------------------------------------- |
+| ![SendIt! response assertions](docs/screenshots/test-results.png) | ![SendIt! collection runner](docs/screenshots/collection-runner.png) |
+
+| WebSocket connections                                                | Server-sent events                                             |
+| -------------------------------------------------------------------- | -------------------------------------------------------------- |
+| ![SendIt! WebSocket messages](docs/screenshots/live-connections.png) | ![SendIt! SSE stream](docs/screenshots/server-sent-events.png) |
 
 ## Development and reproducible build
 
@@ -49,11 +61,11 @@ node tests/release-smoke.mjs
 
 `powershell -NoProfile -File scripts/source-archive.ps1` creates the source ZIP from an explicit file allowlist. Development/build needs network access to package registries and release downloads; normal operation does not need a development server. Build metadata can change the executable hash on subsequent builds.
 
-The development data directory is `<project>/ApiWorkbench-data`. Tests use isolated directories under `.test-data`. For diagnostics/automation, `APIWORKBENCH_DATA_DIR` explicitly overrides the storage root. Ordinary portable usage does not need it. A read-only executable directory produces a relocation instruction instead of silently falling back to a profile directory.
+The development data directory is `<project>/SendIt-data`. Existing data folders from earlier versions are reused when no SendIt-data folder exists; saved requests, credentials and custom titles are preserved. Earlier backups and secret variable exports can still be imported. Tests use isolated directories under `.test-data`. For diagnostics/automation, `SENDIT_DATA_DIR` explicitly overrides the storage root. Ordinary portable usage does not need it. A read-only executable directory produces a relocation instruction instead of silently falling back to a profile directory.
 
 ## Everyday workflows
 
-1. Double-click **ApiWorkbench-Portable-Win-x64.exe** in the `dist` folder. Click **New** or press **Ctrl+T**. Click **GET** or its arrow to select GET, POST, PUT, PATCH, DELETE, HEAD or OPTIONS; you can also type a custom method. Enter the URL and click **Send** (Ctrl+Enter).
+1. Double-click **SendIt-Portable-Win-x64.exe** in the `dist` folder. Click **New** or press **Ctrl+T**. Click **GET** or its arrow to select GET, POST, PUT, PATCH, DELETE, HEAD or OPTIONS; you can also type a custom method. Enter the URL and click **Send** (Ctrl+Enter).
 2. Edit Params, Authorization, Headers, Body, Scripts, Variables or Docs. The response pane provides body, headers, cookies and tests. Monaco supports Ctrl+F search and folding.
 3. Click **Save** (Ctrl+S), name a collection or choose an existing folder. Collection/folder context menus expose settings, organization and exports.
 4. Open **Environments**, create variables, then select the environment above the workbench. Use `{{baseUrl}}/users`, for example.
@@ -98,6 +110,7 @@ Electron 44, React 19, TypeScript, Vite, Zustand, bundled Monaco, built-in SQLit
 - [Research and official references](docs/POSTMAN_RESEARCH.md)
 - [Feature acceptance matrix](docs/FEATURE_MATRIX.md)
 - [Architecture](docs/ARCHITECTURE.md)
+- [Logo and branding](docs/BRANDING.md)
 - [Implementation status and omissions](docs/IMPLEMENTATION_STATUS.md)
 - [Test report and executable verification](docs/TEST_REPORT.md)
 

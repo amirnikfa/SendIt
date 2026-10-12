@@ -72,7 +72,12 @@ function importPairs(value: unknown, warnings: string[], context: string, files 
       enabled: row.disabled !== true && row.enabled !== false,
     };
     if (row.description !== undefined) result.description = description(row.description);
-    if (row.type === 'secret' || row.secret === true || row['x-apiworkbench-secret'] === true)
+    if (
+      row.type === 'secret' ||
+      row.secret === true ||
+      row['x-sendit-secret'] === true ||
+      row['x-apiworkbench-secret'] === true
+    )
       result.secret = true;
     if (files) {
       result.type = row.type === 'file' ? 'file' : 'text';
@@ -432,7 +437,7 @@ function exportPairs(rows: Pair[], environment = false): JsonObject[] {
     value: row.value,
     ...(environment
       ? { enabled: row.enabled, type: row.secret ? 'secret' : 'default' }
-      : { disabled: !row.enabled, ...(row.secret ? { 'x-apiworkbench-secret': true } : {}) }),
+      : { disabled: !row.enabled, ...(row.secret ? { 'x-sendit-secret': true } : {}) }),
     ...(row.description ? { description: row.description } : {}),
   }));
 }
@@ -585,7 +590,7 @@ export function exportEnvironment(environment: Environment): object {
     values: exportPairs(environment.variables, true),
     _postman_variable_scope: 'environment',
     _postman_exported_at: new Date().toISOString(),
-    _postman_exported_using: 'ApiWorkbench/1.0',
+    _postman_exported_using: 'SendIt!/1.0',
   };
 }
 
@@ -1031,7 +1036,7 @@ export function toMarkdown(collection: Collection): string {
     '',
     collection.description,
     '',
-    'Generated locally by ApiWorkbench. Review descriptions and URLs for sensitive values before sharing.',
+    'Generated locally by SendIt!. Review descriptions and URLs for sensitive values before sharing.',
     '',
   ];
   for (const request of collection.requests) {

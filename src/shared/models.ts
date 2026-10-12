@@ -246,7 +246,7 @@ export const defaultSettings: Settings = {
   sidebarWidth: 272,
   editorHeight: 300,
   sidebarCollapsed: false,
-  title: 'ApiWorkbench',
+  title: 'SendIt!',
 };
 export function initialState(): AppState {
   const workspace: Workspace = {

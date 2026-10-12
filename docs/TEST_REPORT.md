@@ -1,14 +1,14 @@
-# Test and release report — ApiWorkbench 1.0.0
+# Test and release report — SendIt! 1.0.0
 
-Date: 2026-10-11. Final results below refer to the delivered source and portable executable. Requests use deterministic local HTTP/TLS/WebSocket/SSE fixtures; no response is simulated inside the application.
+Date: 2026-10-12. Final results below refer to the delivered source and portable executable. Requests use deterministic local HTTP/TLS/WebSocket/SSE fixtures; no response is simulated inside the application.
 
 ## Release artifact and actual Windows verification
 
 | Property   | Recorded value                                                                       |
 | ---------- | ------------------------------------------------------------------------------------ |
-| Artifact   | `dist/ApiWorkbench-Portable-Win-x64.exe`                                             |
-| File size  | **104,623,476 bytes** (99.78 MiB)                                                    |
-| SHA-256    | `59c1ba66c08e7ad2fd406a08df038c0260188e961a076c84e593f3f724edd24a`                   |
+| Artifact   | `dist/SendIt-Portable-Win-x64.exe`                                                   |
+| File size  | **104,911,277 bytes** (100.05 MiB)                                                   |
+| SHA-256    | `c9c829c6b0adb00455adcf96dc0db0926f8d4700d3c6c08dfec833fce781d612`                   |
 | Format     | electron-builder single Windows x64 portable launcher; no installation wizard        |
 | Signing    | **Unsigned**; independently checked with Get-AuthenticodeSignature                   |
 | Test host  | **Windows 11 Pro, 10.0.26200, x64**                                                  |
@@ -18,7 +18,7 @@ Date: 2026-10-11. Final results below refer to the delivered source and portable
 `tests/release-smoke.mjs` copied the actual EXE to a fresh directory and started that launcher directly with `child_process.spawn`. The app loaded its renderer from packaged `app.asar`. The test removed developer Electron/Node/data override variables, connected automation to Chromium, and verified all **eight release checks**:
 
 1. Direct launch using the runtime bundled in the portable EXE.
-2. Creation of `ApiWorkbench-data/workbench.sqlite` beside the launcher, not the temporary extraction directory.
+2. Creation of `SendIt-data/workbench.sqlite` beside the launcher, not the temporary extraction directory.
 3. Real native HTTP request and displayed JSON/status.
 4. Real assertion execution using the packaged QuickJS WASM dependency.
 5. Renderer has no Node `require` or `process` globals.
@@ -32,7 +32,7 @@ Machine-readable evidence: [PORTABLE_VERIFICATION.json](PORTABLE_VERIFICATION.js
 
 ## Automated unit and integration tests
 
-**87 passed, 0 failed, 0 skipped**, across five files. TypeScript checking and the production build also pass. Raw results: [UNIT_TEST_RESULTS.json](UNIT_TEST_RESULTS.json).
+**88 passed, 0 failed, 0 skipped**, across five files. TypeScript checking and the production build also pass. Raw results: [UNIT_TEST_RESULTS.json](UNIT_TEST_RESULTS.json).
 
 | Suite                 | Passed | Important coverage                                                                                                                                                                                                                                      |
 | --------------------- | -----: | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -40,7 +40,7 @@ Machine-readable evidence: [PORTABLE_VERIFICATION.json](PORTABLE_VERIFICATION.js
 | HTTP engine           |     18 | GET/JSON/headers/params, scopes/scripts, Basic/Bearer/API key/Digest, OAuth grants, forms/multipart/binary/GraphQL, compression, cookies, redirects and credential stripping, proxy/CONNECT, default TLS verification, cancellation/timeout/size/errors |
 | Live protocols        |     10 | WS messages/fragmentation/binary/subprotocols, auth/variables, disconnect/limits, incremental SSE UTF-8/BOM/CRLF/multiline, MIME/redirect rejection, timeout, TLS/proxy                                                                                 |
 | Scripts and variables |      7 | Assertions/scope APIs, no host capabilities, infinite-loop/memory bounds, async-test rejection, syntax errors/isolation, recursive scope precedence and missing/cyclic references                                                                       |
-| Storage               |      4 | SQLite reopen persistence, secret-codec boundary, protected cookie persistence, rejected invalid writes/previous snapshot, cyclic-folder rejection                                                                                                      |
+| Storage               |      5 | SQLite reopen persistence, secret-codec boundary, protected cookie persistence, rejected invalid writes/previous snapshot, cyclic-folder rejection                                                                                                      |
 
 Storage unit tests inject a deterministic test codec to exercise serialization. Real Electron QA uses Windows DPAPI and reopens a workspace containing a marked secret. This does not replace cryptographic or penetration testing.
 
@@ -72,7 +72,7 @@ Inspected actual screenshots of dark/light themes, the 900 × 640 minimum window
 
 During development, fixed Monaco worker import paths for the installed version, corrected automation to type into Monaco's native edit surface, and added unambiguous accessible labels to theme and collection/folder controls. An initial portable script check read a draft before its 200 ms autosave; the check now waits for actual persisted state before invoking that bridge. These failures were investigated and the final runs pass. No unresolved failure is hidden by removing a required check.
 
-Representative captures: [dark](screenshots/workbench-dark.png), [light](screenshots/workbench-light.png), [minimum window](screenshots/workbench-minimum-window.png), [test results](screenshots/test-results.png), [runner](screenshots/collection-runner.png), [WebSocket](screenshots/live-connections.png), [SSE](screenshots/server-sent-events.png), [portable EXE](screenshots/portable-release.png).
+Representative captures: [dark](screenshots/sendit-dark.png), [light](screenshots/sendit-light.png), [minimum window](screenshots/sendit-minimum-window.png), [test results](screenshots/test-results.png), [runner](screenshots/collection-runner.png), [WebSocket](screenshots/live-connections.png), [SSE](screenshots/server-sent-events.png), [portable EXE](screenshots/portable-release.png).
 
 ## Dependency and build findings
 
@@ -102,7 +102,7 @@ node tests/e2e.mjs
 node tests/ui-interactions.mjs
 npm run package
 node tests/release-smoke.mjs
-Get-FileHash dist/ApiWorkbench-Portable-Win-x64.exe -Algorithm SHA256
+Get-FileHash dist/SendIt-Portable-Win-x64.exe -Algorithm SHA256
 ```
 
 Builds require network access to npm and Electron/electron-builder release downloads. Ordinary use requires no app-owned service. Rebuilding may produce a different hash because packaging metadata can vary; verify the hash of the artifact actually distributed.

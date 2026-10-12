@@ -45,6 +45,7 @@ import { IconButton, Empty } from './components';
 import { DialogHost, type DialogState } from './dialogs';
 import { methodClass, RequestEditor, ResponseViewer } from './RequestEditor';
 import { activeWorkspace, flushSave, useStore } from './store';
+import logo from '../../assets/icon.png';
 
 type Context = {
   x: number;
@@ -58,13 +59,13 @@ type DragItem = {
 };
 const readDrag = (e: DragEvent): DragItem | null => {
   try {
-    return JSON.parse(e.dataTransfer.getData('application/x-apiworkbench'));
+    return JSON.parse(e.dataTransfer.getData('application/x-sendit'));
   } catch {
     return null;
   }
 };
 const drag = (e: DragEvent, item: DragItem) => {
-  e.dataTransfer.setData('application/x-apiworkbench', JSON.stringify(item));
+  e.dataTransfer.setData('application/x-sendit', JSON.stringify(item));
   e.dataTransfer.effectAllowed = 'move';
 };
 const stopDrop = (e: DragEvent) => {
@@ -98,7 +99,7 @@ export default function App() {
   }, []);
   useEffect(() => {
     document.documentElement.dataset.theme = settings.theme;
-    document.title = settings.title || 'ApiWorkbench';
+    document.title = settings.title || 'SendIt!';
   }, [settings.theme, settings.title]);
   useEffect(() => {
     localStorage.setItem('aw-expanded', JSON.stringify([...expanded]));
@@ -533,9 +534,9 @@ export default function App() {
     return (
       <div className="boot-screen">
         <div className="brand-symbol">
-          <Braces size={30} />
+          <img src={logo} alt="SendIt! logo" />
         </div>
-        <h1>ApiWorkbench</h1>
+        <h1>SendIt!</h1>
         {store.bootError ? (
           <>
             <p className="red">{store.bootError}</p>
@@ -575,9 +576,9 @@ export default function App() {
       <header className="titlebar">
         <div className="brand">
           <span className="brand-symbol">
-            <Braces size={17} />
+            <img src={logo} alt="SendIt! logo" />
           </span>
-          <strong>{settings.title || 'ApiWorkbench'}</strong>
+          <strong>{settings.title || 'SendIt!'}</strong>
           <span className="local-badge">LOCAL</span>
         </div>
         <button className="global-search" onClick={() => setDialog({ kind: 'search' })}>

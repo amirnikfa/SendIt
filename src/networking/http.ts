@@ -210,7 +210,7 @@ export class HttpEngine {
       case 'binary':
         return { bytes: await this.file(body.filePath), contentType: 'application/octet-stream' };
       case 'form-data': {
-        const boundary = '----ApiWorkbench' + randomBytes(16).toString('hex');
+        const boundary = '----SendIt' + randomBytes(16).toString('hex');
         const buffers: Buffer[] = [];
         let total = 0;
         const add = (data: string | Buffer) => {
@@ -580,7 +580,7 @@ export class HttpEngine {
         http.validateHeaderValue(key, value);
       }
       if (!getHeader(headers, 'accept')) headers.push(['Accept', '*/*']);
-      if (!getHeader(headers, 'user-agent')) headers.push(['User-Agent', 'ApiWorkbench/1.0']);
+      if (!getHeader(headers, 'user-agent')) headers.push(['User-Agent', 'SendIt/1.0']);
       if (!getHeader(headers, 'accept-encoding'))
         headers.push(['Accept-Encoding', 'gzip, deflate, br']);
       const body = await this.body(request);
