@@ -99,7 +99,8 @@ export interface RequestTab {
   workspaceId: string;
 }
 export interface Settings {
-  theme: 'dark' | 'light';
+  theme: 'dark' | 'light' | 'pink';
+  zoomPercent: number;
   timeoutMs: number;
   followRedirects: boolean;
   verifyTls: boolean;
@@ -183,6 +184,7 @@ export interface LiveEvent {
 export interface Bridge {
   load(): Promise<BootResult>;
   save(state: AppState): Promise<void>;
+  setZoom(percent: number): Promise<void>;
   execute(id: string, input: ExecutionInput): Promise<ExecutionResult>;
   cancel(id: string): Promise<void>;
   pickFile(): Promise<string | null>;
@@ -236,8 +238,10 @@ export const newCollection = (name: string): Collection => ({
   preScript: '',
   postScript: '',
 });
+export const ZOOM_LEVELS = [75, 90, 100, 110, 125, 150, 175, 200] as const;
 export const defaultSettings: Settings = {
   theme: 'dark',
+  zoomPercent: 100,
   timeoutMs: 30000,
   followRedirects: true,
   verifyTls: true,

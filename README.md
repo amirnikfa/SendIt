@@ -10,7 +10,7 @@ A local Windows desktop workspace for building, sending, organizing and testing 
 
 Run **`dist/SendIt-Portable-Win-x64.exe`** on Windows 10/11 x64. No installation wizard, administrator privileges, Node.js, npm or Python are required. The launcher temporarily extracts its bundled Electron runtime. Keep the executable in a writable directory; persistent data lives in **`SendIt-data` beside the EXE**. First launch may take longer while the runtime is extracted.
 
-The executable is unsigned. The delivered release is **104,911,277 bytes**, verified by direct launch and restart on Windows 11 Pro x64 (10.0.26200). Windows 10 is targeted but not individually tested. SHA-256: `c9c829c6b0adb00455adcf96dc0db0926f8d4700d3c6c08dfec833fce781d612`. Detailed evidence is in [TEST_REPORT.md](docs/TEST_REPORT.md) and `dist/RELEASE.json`.
+The executable is unsigned. The delivered release is **104,912,457 bytes**, verified by direct launch and restart on Windows 11 Pro x64 (10.0.26200). Windows 10 is targeted but not individually tested. SHA-256: `ce0bf3bdf9e3ce83a8bd37fab64b15fc75e9d183b8dfeb115adfb9a952b098c3`. Detailed evidence is in [TEST_REPORT.md](docs/TEST_REPORT.md) and `dist/RELEASE.json`.
 
 The complete source archive is `dist/SendIt-Source.zip`. Extract it, then run the build commands below to recreate a release. The source archive intentionally excludes dependencies, generated program files, test workspace data and proprietary research imagery.
 
@@ -21,7 +21,7 @@ The complete source archive is `dist/SendIt-Source.zip`. Extract it, then run th
 - Cancellation, timeouts, redirects, verified TLS by default, HTTP/HTTPS proxies, gzip/deflate/Brotli, persistent cookies, bounded large/binary responses.
 - Basic, Bearer, API Key, Digest, OAuth client credentials and refresh-token authentication, plus collection/folder inheritance.
 - Local workspaces, collections, nested folders, descriptions, request duplication/movement, drag organization, search and history.
-- Multiple draft tabs, restart restoration, unsaved indicators, resizable panes, custom window title, light/dark themes, context menus and keyboard shortcuts.
+- Multiple draft tabs, restart restoration, unsaved indicators, resizable panes, custom window title, dark/light/pink themes, app zoom, context menus and keyboard shortcuts.
 - Environment, global, collection and request variables; recursive double-brace substitution and explicit missing/cyclic-variable errors.
 - Isolated pre-request/post-response scripts, named test results, common assertions, variable mutation and a redacted console.
 - Collection runner with iterations, delay, cancellation, variable chaining and exported summaries.
@@ -32,6 +32,10 @@ The complete source archive is `dist/SendIt-Source.zip`. Extract it, then run th
 ![SendIt! light theme](docs/screenshots/sendit-light.png)
 
 ## Screenshots
+
+| Pink theme                                              | Larger interface at 125%                                     |
+| ------------------------------------------------------- | ------------------------------------------------------------ |
+| ![SendIt! pink theme](docs/screenshots/sendit-pink.png) | ![SendIt! at 125% zoom](docs/screenshots/sendit-zoom125.png) |
 
 | Request tests                                                     | Collection runner                                                    |
 | ----------------------------------------------------------------- | -------------------------------------------------------------------- |
@@ -64,6 +68,8 @@ node tests/release-smoke.mjs
 The development data directory is `<project>/SendIt-data`. Existing data folders from earlier versions are reused when no SendIt-data folder exists; saved requests, credentials and custom titles are preserved. Earlier backups and secret variable exports can still be imported. Tests use isolated directories under `.test-data`. For diagnostics/automation, `SENDIT_DATA_DIR` explicitly overrides the storage root. Ordinary portable usage does not need it. A read-only executable directory produces a relocation instruction instead of silently falling back to a profile directory.
 
 ## Everyday workflows
+
+Open **Settings → General** to choose **Dark**, **Light** or **Pink**, and set **App zoom** from **75% to 200%**. Zoom enlarges text, buttons, panels and code editors together. Use **Ctrl + +** (or **Ctrl + =**) to zoom in, **Ctrl + −** to zoom out, and **Ctrl + 0** to return to 100%, including while editing code. Appearance settings save automatically and are restored at startup. Older workspaces default to 100% zoom.
 
 1. Double-click **SendIt-Portable-Win-x64.exe** in the `dist` folder. Click **New** or press **Ctrl+T**. Click **GET** or its arrow to select GET, POST, PUT, PATCH, DELETE, HEAD or OPTIONS; you can also type a custom method. Enter the URL and click **Send** (Ctrl+Enter).
 2. Edit Params, Authorization, Headers, Body, Scripts, Variables or Docs. The response pane provides body, headers, cookies and tests. Monaco supports Ctrl+F search and folding.

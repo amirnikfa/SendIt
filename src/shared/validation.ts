@@ -73,7 +73,8 @@ export const collectionSchema = z.object({
 });
 export const environmentSchema = z.object({ id, name: text, variables: pairs });
 export const settingsSchema = z.object({
-  theme: z.enum(['dark', 'light']),
+  theme: z.enum(['dark', 'light', 'pink']),
+  zoomPercent: z.number().int().min(75).max(200).default(100),
   timeoutMs: z.number().int().min(1).max(600000),
   followRedirects: z.boolean(),
   verifyTls: z.boolean(),

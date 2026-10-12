@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import {
   newCollection,
+  ZOOM_LEVELS,
   pair,
   uid,
   type ApiRequest,
@@ -221,7 +222,11 @@ function SaveDialog({ tabId, close }: { tabId: string; close: () => void }) {
       </Field>
       {collection && !newName && (
         <Field label="Folder">
-          <select aria-label="Folder" value={folderId} onChange={(e) => setFolderId(e.target.value)}>
+          <select
+            aria-label="Folder"
+            value={folderId}
+            onChange={(e) => setFolderId(e.target.value)}
+          >
             <option value="">Collection root</option>
             {collection.folders.map((f) => (
               <option key={f.id} value={f.id}>
@@ -602,10 +607,11 @@ function SettingsDialog({ close }: { close: () => void }) {
         <>
           <Field label="Appearance">
             <div className="theme-picker">
-              {(['dark', 'light'] as const).map((theme) => (
+              {(['dark', 'light', 'pink'] as const).map((theme) => (
                 <button
                   key={theme}
-                  aria-label={theme === 'dark' ? 'Dark' : 'Light'}
+                  aria-label={theme.charAt(0).toUpperCase() + theme.slice(1)}
+                  aria-pressed={settings.theme === theme}
                   className={`theme-card ${theme} ${settings.theme === theme ? 'selected' : ''}`}
                   onClick={() => update({ theme })}
                 >
@@ -618,12 +624,28 @@ function SettingsDialog({ close }: { close: () => void }) {
                     </div>
                   </div>
                   <span>
-                    {theme === 'dark' ? 'Dark' : 'Light'}
+                    {theme.charAt(0).toUpperCase() + theme.slice(1)}
                     {settings.theme === theme && <CheckCircle2 size={14} />}
                   </span>
                 </button>
               ))}
             </div>
+          </Field>
+          <Field
+            label="App zoom"
+            hint="Resize text, controls and code editors. Ctrl + / Ctrl − to zoom; Ctrl 0 to reset."
+          >
+            <select
+              aria-label="App zoom"
+              value={settings.zoomPercent}
+              onChange={(event) => update({ zoomPercent: Number(event.target.value) })}
+            >
+              {ZOOM_LEVELS.map((level) => (
+                <option key={level} value={level}>
+                  {level}%{level === 100 ? ' (default)' : ''}
+                </option>
+              ))}
+            </select>
           </Field>
           <Field label="Window title">
             <input value={settings.title} onChange={(e) => update({ title: e.target.value })} />
@@ -777,6 +799,9 @@ function SettingsDialog({ close }: { close: () => void }) {
             ['Close request tab', 'Ctrl + W'],
             ['Search workspace', 'Ctrl + K'],
             ['Search in code or response', 'Ctrl + F'],
+            ['Zoom in', 'Ctrl + +'],
+            ['Zoom out', 'Ctrl + −'],
+            ['Reset app zoom', 'Ctrl + 0'],
             ['Format code', 'Shift + Alt + F'],
             ['Close dialog', 'Esc'],
           ].map(([label, keys]) => (

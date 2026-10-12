@@ -386,6 +386,134 @@ try {
       ).toEqual([1440, 940]);
     },
   );
+  await check(
+    '10 Pink theme styles the app and Monaco editors and preserves theme switching',
+    async () => {
+      await page.getByTestId('settings').click();
+      const dialog = page.getByRole('dialog', { name: 'Settings', exact: true });
+      for (const [name, theme] of [
+        ['Pink', 'pink'],
+        ['Light', 'light'],
+        ['Dark', 'dark'],
+        ['Pink', 'pink'],
+      ]) {
+        await dialog.getByRole('button', { name, exact: true }).click();
+        await expect(dialog.getByRole('button', { name, exact: true })).toHaveAttribute(
+          'aria-pressed',
+          'true',
+        );
+        await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
+        await persisted((state) => state.settings.theme === theme);
+      }
+      await page.screenshot({ path: join(screenshots, 'appearance-settings.png') });
+      await dialog.getByRole('button', { name: 'Done', exact: true }).click();
+      await section('Scripts');
+      await page.getByRole('button', { name: 'Post-response', exact: true }).click();
+      const editor = page.locator('.code-editor[aria-label="Post-response script"] .monaco-editor');
+      await expect(editor).toBeVisible();
+      await expect(editor).toHaveCSS('background-color', 'rgb(255, 249, 252)');
+      await page.screenshot({ path: join(screenshots, 'sendit-pink.png') });
+    },
+  );
+  await check(
+    '11 App zoom scales the native window, works inside editors, and rejects invalid values',
+    async () => {
+      const zoom = () =>
+        app.evaluate(({ BrowserWindow }) =>
+          BrowserWindow.getAllWindows()[0].webContents.getZoomFactor(),
+        );
+      const baselineDpr = await page.evaluate(() => devicePixelRatio);
+      await page.getByTestId('settings').click();
+      const dialog = page.getByRole('dialog', { name: 'Settings', exact: true });
+      const control = dialog.getByLabel('App zoom', { exact: true });
+      for (const level of [75, 150, 200, 125]) {
+        await control.selectOption(String(level));
+        await expect.poll(zoom).toBeCloseTo(level / 100);
+        await persisted((state) => state.settings.zoomPercent === level);
+      }
+      await expect
+        .poll(() => page.evaluate(() => devicePixelRatio))
+        .toBeCloseTo(baselineDpr * 1.25);
+      await dialog.getByRole('button', { name: 'Done', exact: true }).click();
+      const editor = page.locator('.code-editor[aria-label="Post-response script"] .monaco-editor');
+      await editor.click({ position: { x: 80, y: 25 } });
+      const beforeState = await snapshot();
+      const before = beforeState.tabs.find((tab) => tab.id === beforeState.activeTabId)?.request
+        .postScript;
+      await page.keyboard.press('Control+=');
+      await expect.poll(zoom).toBeCloseTo(1.5);
+      await page.keyboard.press('Control+-');
+      await expect.poll(zoom).toBeCloseTo(1.25);
+      await page.keyboard.press('Control+0');
+      await expect.poll(zoom).toBeCloseTo(1);
+      const after = await snapshot();
+      expect(after.tabs.find((tab) => tab.id === after.activeTabId)?.request.postScript).toBe(
+        before,
+      );
+      for (const invalid of [0, 74, 201, '125']) {
+        expect(
+          await page.evaluate(async (value) => {
+            try {
+              await window.workbench.setZoom(value);
+              return false;
+            } catch {
+              return true;
+            }
+          }, invalid),
+        ).toBe(true);
+      }
+      await expect.poll(zoom).toBeCloseTo(1);
+      await page.getByTestId('settings').click();
+      await dialog.getByLabel('App zoom', { exact: true }).selectOption('125');
+      await expect.poll(zoom).toBeCloseTo(1.25);
+      await dialog.getByRole('button', { name: 'Done', exact: true }).click();
+      await persisted((state) => state.settings.zoomPercent === 125);
+      // Electron's native capture includes the entire window at non-default page zoom.
+      const zoomScreenshot = await app.evaluate(async ({ BrowserWindow }) =>
+        (await BrowserWindow.getAllWindows()[0].capturePage()).toPNG().toString('base64'),
+      );
+      await writeFile(
+        join(screenshots, 'sendit-zoom125.png'),
+        Buffer.from(zoomScreenshot, 'base64'),
+      );
+    },
+  );
+  await check(
+    '12 Pink theme and native zoom persist after restart and remain adjustable in a small window',
+    async () => {
+      await closeApp();
+      await launch();
+      await expect(page.locator('html')).toHaveAttribute('data-theme', 'pink');
+      await expect
+        .poll(() =>
+          app.evaluate(({ BrowserWindow }) =>
+            BrowserWindow.getAllWindows()[0].webContents.getZoomFactor(),
+          ),
+        )
+        .toBe(1.25);
+      expect((await snapshot()).settings.zoomPercent).toBe(125);
+      await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setSize(900, 640));
+      await page.getByTestId('settings').click();
+      const dialog = page.getByRole('dialog', { name: 'Settings', exact: true });
+      await dialog.getByLabel('App zoom', { exact: true }).selectOption('200');
+      await expect
+        .poll(() =>
+          app.evaluate(({ BrowserWindow }) =>
+            BrowserWindow.getAllWindows()[0].webContents.getZoomFactor(),
+          ),
+        )
+        .toBe(2);
+      const close = await page
+        .getByRole('button', { name: 'Close window', exact: true })
+        .boundingBox();
+      const viewport = await page.evaluate(() => ({ width: innerWidth, height: innerHeight }));
+      expect(close.x + close.width).toBeLessThanOrEqual(viewport.width);
+      await page.keyboard.press('Control+0');
+      await expect(dialog.getByLabel('App zoom', { exact: true })).toHaveValue('100');
+      await dialog.getByRole('button', { name: 'Done', exact: true }).click();
+      await expect(page.getByTestId('send')).toBeVisible();
+    },
+  );
   expect(report.rendererErrors).toEqual([]);
 } catch (error) {
   report.error = `${current}: ${String(error)}`;

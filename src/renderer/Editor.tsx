@@ -36,6 +36,32 @@ monaco.editor.defineTheme('workbench-light', {
   rules: [],
   colors: { 'editor.background': '#ffffff', 'editorGutter.background': '#ffffff' },
 });
+monaco.editor.defineTheme('workbench-pink', {
+  base: 'vs',
+  inherit: true,
+  rules: [
+    { token: 'string.key.json', foreground: '9D2861' },
+    { token: 'string.value.json', foreground: '237858' },
+    { token: 'number', foreground: '7D429A' },
+    { token: 'keyword', foreground: 'AA2865' },
+  ],
+  colors: {
+    'editor.background': '#fff9fc',
+    'editor.foreground': '#432536',
+    'editorGutter.background': '#fff9fc',
+    'editorLineNumber.foreground': '#896577',
+    'editorLineNumber.activeForeground': '#a52b67',
+    'editor.selectionBackground': '#f5cee2',
+    'editor.inactiveSelectionBackground': '#f9e2ed',
+    'editor.lineHighlightBackground': '#fceaf3',
+    'editorCursor.foreground': '#a52b67',
+    'editorWidget.background': '#fff3f8',
+    'editorWidget.border': '#e7bfd2',
+    'editorSuggestWidget.selectedBackground': '#f5d6e6',
+    'editor.findMatchBackground': '#f4bfd8',
+    'editor.findMatchHighlightBackground': '#f9dfec',
+  },
+});
 export function CodeEditor({
   value,
   onChange,

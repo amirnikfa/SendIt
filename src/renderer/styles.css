@@ -43,6 +43,26 @@
   --orange: #aa711a;
   --shadow: 0 20px 65px #24334428;
 }
+:root[data-theme='pink'] {
+  color-scheme: light;
+  --bg: #fff9fc;
+  --bg-alt: #fff0f6;
+  --raised: #fff5fa;
+  --hover: #fbe5f0;
+  --selected: #f5d6e6;
+  --border: #e7bfd2;
+  --border-soft: #f2dce7;
+  --text: #432536;
+  --muted: #795467;
+  --faint: #896577;
+  --blue: #a52b67;
+  --blue-solid: #b72d70;
+  --blue-hover: #9e245e;
+  --green: #237858;
+  --red: #b42348;
+  --orange: #926018;
+  --shadow: 0 20px 65px #69204424;
+}
 * {
   box-sizing: border-box;
 }
@@ -154,7 +174,7 @@ svg {
   background-clip: padding-box;
 }
 ::selection {
-  background: #397cec50;
+  background: color-mix(in srgb, var(--blue-solid) 30%, transparent);
 }
 code,
 .mono {
@@ -172,7 +192,7 @@ kbd {
 }
 .app {
   height: 100%;
-  min-width: 790px;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   background: var(--bg);
@@ -2621,6 +2641,7 @@ kbd {
 }
 .theme-picker {
   display: flex;
+  flex-wrap: wrap;
   gap: 16px;
   margin-bottom: 10px;
 }
@@ -2700,6 +2721,30 @@ kbd {
 }
 .theme-card.light .theme-swatch > div i:first-child {
   background: #83aae7;
+}
+.theme-card.pink .theme-swatch {
+  background: #fff9fc;
+}
+.theme-card.pink .theme-swatch:before {
+  background: #f5d6e6;
+}
+.theme-card.pink .theme-swatch > i {
+  background: #fbe5f0;
+}
+.theme-card.pink .theme-swatch > div i {
+  background: #e7bfd2;
+}
+.theme-card.pink .theme-swatch > div i:first-child {
+  background: #b72d70;
+}
+:root[data-theme='pink'] .method-put {
+  color: #465ca8;
+}
+:root[data-theme='pink'] .method-patch {
+  color: #8551a0;
+}
+:root[data-theme='pink'] .method-head {
+  color: #247f83;
 }
 .warning {
   display: flex;
@@ -3255,5 +3300,44 @@ kbd {
   }
   .welcome-details {
     margin-top: 20px;
+  }
+}
+@media (max-width: 800px) {
+  .global-search {
+    display: none;
+  }
+  .brand {
+    flex: 1;
+    width: auto;
+    min-width: 0;
+  }
+  .titlebar-end {
+    margin-left: auto;
+    min-width: 126px;
+  }
+  .workspace-bar {
+    overflow-x: auto;
+    gap: 10px;
+  }
+  .workspace-bar > * {
+    flex-shrink: 0;
+  }
+  .explorer {
+    max-width: 30vw;
+  }
+  .navigation-rail {
+    width: 52px;
+    min-width: 52px;
+    overflow-y: auto;
+  }
+  .navigation-rail button > span {
+    display: none;
+  }
+  .section-tabs {
+    min-width: 0;
+    overflow-x: auto;
+  }
+  .section-tabs > button {
+    flex-shrink: 0;
   }
 }

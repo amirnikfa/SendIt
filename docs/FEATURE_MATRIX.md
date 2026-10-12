@@ -2,41 +2,41 @@
 
 Classification is priority, not a claim of completion. See IMPLEMENTATION_STATUS.md for actual delivery status.
 
-| Feature | Class | Implementation approach / expected behavior | Acceptance criterion |
-|---|---|---|---|
-| HTTP/custom methods | Essential | Native Node HTTP/HTTPS engine | Local fixture observes method, bytes and headers |
-| Query and headers | Essential | Typed enabled rows, descriptions, URL synchronization, duplicates | Edits affect wire request; disabled rows absent |
-| Raw/JSON/XML/HTML/text | Essential | Code editor with language mode and formatting | Exact encoded bytes and content type observed |
-| Form and multipart/binary | Essential | Form encoder; picker-authorized file reads | Fixture receives fields and file bytes |
-| Timeout/cancel/redirects | Essential | Abortable native requests, bounded redirects | Timeout and cancellation resolve; redirect policy enforced |
-| TLS/compression/proxy | Essential | Verified TLS default, decompression, explicit HTTP proxy | TLS rejection, gzip and proxy fixtures pass |
-| Response viewer | Essential | Status/time/size; body/headers/cookies/tests, editor search, file save | Real bytes rendered and downloadable |
-| JSON folding / preview | Essential | Code editor folding; sandboxed HTML/image preview | Valid JSON folds; HTML cannot invoke bridge or network |
-| Workspace/collection/folder CRUD | Essential | SQLite-backed typed document | Restart retains hierarchy and descriptions |
-| Tabs/layout/themes | Essential | Persist draft tabs and panel sizes; drag reorder | Restore and close work; both themes inspected |
-| Search/context menus/shortcuts | Essential | Local filtering and explicit actions | Visible actions function; keyboard flows tested |
-| Environment/global/collection/local variables | Essential | Scoped resolver and masked secret rows | Narrow scope wins on actual request |
-| No auth/basic/bearer/API key | Essential | Native authorization transformation | Fixture receives correct credentials |
-| Inherited authentication | Essential | Walk request → folder → collection | Override and fallback verified |
-| OAuth client credentials/refresh | Advanced | Real token endpoint request | Local issuer returns token subsequently used |
-| OAuth authorization code/PKCE | Advanced | Browser + state/verifier + loopback callback if implemented | Full redirect and token exchange required |
-| Digest | Advanced | Challenge response with nonce/qop | Fixture verifies digest response |
-| AWS Signature | Advanced | SigV4 signer if implemented | Known signing vectors pass |
-| Scripts/assertions | Essential | QuickJS WASM; synchronous documented pm subset | Passing/failing tests, script error and infinite loop bounded |
-| Collection/folder scripts | Advanced | Parent-before-child ordered execution | Inherited scripts affect variables and results |
-| Postman v2.1 import/export | Essential | Recursive conversion with compatibility warnings | Common collection round trip preserves semantics |
-| Environment import/export | Essential | Postman values schema | Values imported and used |
-| cURL import/export and HTTP snippets | Advanced | Parse without shell execution; quote export safely | Supported flags round-trip; unknown flags warned |
-| History / console | Essential | Bounded local history, redacted execution logs | Reopen request, inspect real status, clear history |
-| Cookies | Advanced | Persistent standards-aware cookie jar and editor | Set-Cookie affects next request, domain/path respected |
-| Collection runner | Advanced | Sequential execution with stop and summaries | Request chaining and cancellation tested |
-| Descriptions/offline docs | Advanced | Persist descriptions; generated Markdown export | Collection documentation works offline |
-| Examples | Advanced | Save real response snapshots if implemented | Example separate from live response |
-| GraphQL over HTTP | Essential | Query/variables encoded into JSON POST | Fixture receives GraphQL envelope |
-| WebSocket / SSE | Advanced | Dedicated streaming lifecycle if implemented | Connect, receive, send where valid, disconnect |
-| gRPC/MQTT/Socket.IO/MCP | Advanced | Separate client stacks, deferred unless validated | No support claim without protocol fixture |
-| Local portable data / backup | Essential | Adjacent data directory, SQLite transactions, explicit backup | Move directory/restart; unwritable path has clear error |
-| Windows portable release | Essential | electron-builder portable x64 | EXE exists, hash recorded, actual Windows launch checked |
-| Team workspaces/comments/sync | Cloud-dependent | Local workspaces and file exchange alternative | No account or external service required |
-| Hosted monitors/mocks | Cloud-dependent | Manual local runner alternative | No misleading hosted controls |
-| Postman API Network/AI/shared vault | Not feasible without proprietary services | Explicitly excluded | No impersonation or fabricated cloud output |
+| Feature                                       | Class                                     | Implementation approach / expected behavior                            | Acceptance criterion                                                                |
+| --------------------------------------------- | ----------------------------------------- | ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| HTTP/custom methods                           | Essential                                 | Native Node HTTP/HTTPS engine                                          | Local fixture observes method, bytes and headers                                    |
+| Query and headers                             | Essential                                 | Typed enabled rows, descriptions, URL synchronization, duplicates      | Edits affect wire request; disabled rows absent                                     |
+| Raw/JSON/XML/HTML/text                        | Essential                                 | Code editor with language mode and formatting                          | Exact encoded bytes and content type observed                                       |
+| Form and multipart/binary                     | Essential                                 | Form encoder; picker-authorized file reads                             | Fixture receives fields and file bytes                                              |
+| Timeout/cancel/redirects                      | Essential                                 | Abortable native requests, bounded redirects                           | Timeout and cancellation resolve; redirect policy enforced                          |
+| TLS/compression/proxy                         | Essential                                 | Verified TLS default, decompression, explicit HTTP proxy               | TLS rejection, gzip and proxy fixtures pass                                         |
+| Response viewer                               | Essential                                 | Status/time/size; body/headers/cookies/tests, editor search, file save | Real bytes rendered and downloadable                                                |
+| JSON folding / preview                        | Essential                                 | Code editor folding; sandboxed HTML/image preview                      | Valid JSON folds; HTML cannot invoke bridge or network                              |
+| Workspace/collection/folder CRUD              | Essential                                 | SQLite-backed typed document                                           | Restart retains hierarchy and descriptions                                          |
+| Tabs/layout/themes                            | Essential                                 | Persist draft tabs, panel sizes and app zoom; drag reorder             | Restore and close work; dark/light/pink themes and persistent 75–200% zoom verified |
+| Search/context menus/shortcuts                | Essential                                 | Local filtering and explicit actions                                   | Visible actions function; keyboard flows tested                                     |
+| Environment/global/collection/local variables | Essential                                 | Scoped resolver and masked secret rows                                 | Narrow scope wins on actual request                                                 |
+| No auth/basic/bearer/API key                  | Essential                                 | Native authorization transformation                                    | Fixture receives correct credentials                                                |
+| Inherited authentication                      | Essential                                 | Walk request → folder → collection                                     | Override and fallback verified                                                      |
+| OAuth client credentials/refresh              | Advanced                                  | Real token endpoint request                                            | Local issuer returns token subsequently used                                        |
+| OAuth authorization code/PKCE                 | Advanced                                  | Browser + state/verifier + loopback callback if implemented            | Full redirect and token exchange required                                           |
+| Digest                                        | Advanced                                  | Challenge response with nonce/qop                                      | Fixture verifies digest response                                                    |
+| AWS Signature                                 | Advanced                                  | SigV4 signer if implemented                                            | Known signing vectors pass                                                          |
+| Scripts/assertions                            | Essential                                 | QuickJS WASM; synchronous documented pm subset                         | Passing/failing tests, script error and infinite loop bounded                       |
+| Collection/folder scripts                     | Advanced                                  | Parent-before-child ordered execution                                  | Inherited scripts affect variables and results                                      |
+| Postman v2.1 import/export                    | Essential                                 | Recursive conversion with compatibility warnings                       | Common collection round trip preserves semantics                                    |
+| Environment import/export                     | Essential                                 | Postman values schema                                                  | Values imported and used                                                            |
+| cURL import/export and HTTP snippets          | Advanced                                  | Parse without shell execution; quote export safely                     | Supported flags round-trip; unknown flags warned                                    |
+| History / console                             | Essential                                 | Bounded local history, redacted execution logs                         | Reopen request, inspect real status, clear history                                  |
+| Cookies                                       | Advanced                                  | Persistent standards-aware cookie jar and editor                       | Set-Cookie affects next request, domain/path respected                              |
+| Collection runner                             | Advanced                                  | Sequential execution with stop and summaries                           | Request chaining and cancellation tested                                            |
+| Descriptions/offline docs                     | Advanced                                  | Persist descriptions; generated Markdown export                        | Collection documentation works offline                                              |
+| Examples                                      | Advanced                                  | Save real response snapshots if implemented                            | Example separate from live response                                                 |
+| GraphQL over HTTP                             | Essential                                 | Query/variables encoded into JSON POST                                 | Fixture receives GraphQL envelope                                                   |
+| WebSocket / SSE                               | Advanced                                  | Dedicated streaming lifecycle if implemented                           | Connect, receive, send where valid, disconnect                                      |
+| gRPC/MQTT/Socket.IO/MCP                       | Advanced                                  | Separate client stacks, deferred unless validated                      | No support claim without protocol fixture                                           |
+| Local portable data / backup                  | Essential                                 | Adjacent data directory, SQLite transactions, explicit backup          | Move directory/restart; unwritable path has clear error                             |
+| Windows portable release                      | Essential                                 | electron-builder portable x64                                          | EXE exists, hash recorded, actual Windows launch checked                            |
+| Team workspaces/comments/sync                 | Cloud-dependent                           | Local workspaces and file exchange alternative                         | No account or external service required                                             |
+| Hosted monitors/mocks                         | Cloud-dependent                           | Manual local runner alternative                                        | No misleading hosted controls                                                       |
+| Postman API Network/AI/shared vault           | Not feasible without proprietary services | Explicitly excluded                                                    | No impersonation or fabricated cloud output                                         |

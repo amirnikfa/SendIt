@@ -1,32 +1,32 @@
 {
-  "started": "2026-10-12T10:45:34.007Z",
-  "runDirectory": "D:\\Projects\\postman\\source\\.test-data\\ui-interactions-1791801934006",
-  "dataDirectory": "D:\\Projects\\postman\\source\\.test-data\\ui-interactions-1791801934006\\SendIt-data",
+  "started": "2026-10-12T11:02:03.681Z",
+  "runDirectory": "D:\\Projects\\postman\\source\\.test-data\\ui-interactions-1791802923680",
+  "dataDirectory": "D:\\Projects\\postman\\source\\.test-data\\ui-interactions-1791802923680\\SendIt-data",
   "checks": [
     {
       "name": "01 Create a collection and nested folders through real context menus",
       "result": "passed",
-      "milliseconds": 2951
+      "milliseconds": 1842
     },
     {
       "name": "02 Save a scripted request in a nested folder and duplicate it",
       "result": "passed",
-      "milliseconds": 1210
+      "milliseconds": 1139
     },
     {
       "name": "03 Move a request with a dialog, drag it between folders, and reorder requests",
       "result": "passed",
-      "milliseconds": 1560
+      "milliseconds": 1573
     },
     {
       "name": "04 Reorder request tabs with a real drag operation",
       "result": "passed",
-      "milliseconds": 474
+      "milliseconds": 451
     },
     {
       "name": "05 Resize and collapse panels; render at the minimum 900 by 640 window",
       "result": "passed",
-      "milliseconds": 1187
+      "milliseconds": 1190
     },
     {
       "name": "06 Run two saved requests sequentially and inspect genuine assertion results",
@@ -36,21 +36,36 @@
     {
       "name": "07 Export and reimport an environment, including a secret variable",
       "result": "passed",
-      "milliseconds": 1117
+      "milliseconds": 1098
     },
     {
       "name": "08 Export a backup, change the workspace, and restore the original data",
       "result": "passed",
-      "milliseconds": 1191
+      "milliseconds": 1228
     },
     {
       "name": "09 Flush an immediately edited tab on native close and restore it on restart",
       "result": "passed",
-      "milliseconds": 741
+      "milliseconds": 670
+    },
+    {
+      "name": "10 Pink theme styles the app and Monaco editors and preserves theme switching",
+      "result": "passed",
+      "milliseconds": 2122
+    },
+    {
+      "name": "11 App zoom scales the native window, works inside editors, and rejects invalid values",
+      "result": "passed",
+      "milliseconds": 2066
+    },
+    {
+      "name": "12 Pink theme and native zoom persist after restart and remain adjustable in a small window",
+      "result": "passed",
+      "milliseconds": 901
     }
   ],
   "rendererErrors": [],
   "nativeDialogs": "Native open/save paths and restore confirmation are stubbed only inside this fresh QA workspace. Drag, editing, menus, scripts, networking and filesystem persistence remain real.",
-  "finished": "2026-10-12T10:45:45.049Z",
+  "finished": "2026-10-12T11:02:18.582Z",
   "error": ""
 }

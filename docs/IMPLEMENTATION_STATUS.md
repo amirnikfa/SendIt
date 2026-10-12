@@ -10,9 +10,9 @@ Research and delivery date: 2026-10-11. This is an independent, account-free Win
 - [x] Implement native HTTP transport, authentication, variables and bounded scripting.
 - [x] Implement SQLite persistence, Windows credential protection and adjacent portable storage.
 - [x] Implement the renderer and complete core request/collection/environment workflows.
-- [x] Test deterministic HTTP/TLS/proxy, scripts, storage and interchange: 87 passing tests.
-- [x] Test real Electron: 24 acceptance checks and nine extended interaction checks pass.
-- [x] Inspect screenshots in both themes, at 900 × 640, and for response/tests/live/runner states.
+- [x] Test deterministic HTTP/TLS/proxy, scripts, storage and interchange: 89 passing tests.
+- [x] Test real Electron: 24 acceptance checks and 12 extended interaction checks pass.
+- [x] Inspect screenshots in all three themes, at 900 × 640, and for response/tests/live/runner states.
 - [x] Fix discovered build, editor-input, accessibility and test synchronization issues.
 - [x] Generate the actual Windows x64 portable executable.
 - [x] Verify the final portable executable on Windows, including restart persistence, and record size/SHA-256.
@@ -20,24 +20,24 @@ Research and delivery date: 2026-10-11. This is an independent, account-free Win
 
 ## Fully implemented within the stated scope
 
-| Area                   | Delivered behavior                                                                                                                                                                                                           |
-| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Desktop shell          | Original blue branding; custom title/window controls; workspace bar; navigation rail; explorer; tabs; environment selector; response split; console; dialogs, menus, toasts and tooltips; light/dark themes                  |
-| Layout/navigation      | Resizable explorer/response panes, collapsible explorer, restored window bounds/tabs, dirty indicators, tab drag reorder, collection/request drag organization, context menus, search, URL history suggestions and shortcuts |
-| Requests               | Standard/custom HTTP methods; synchronized URL/query rows; enabled/disabled and duplicate headers/params; descriptions, add/delete/reorder and bulk editing; validation/interpolation                                        |
-| Bodies                 | None; raw JSON/XML/HTML/JavaScript/text; URL-encoded form; multipart text/files; binary picker uploads; GraphQL over HTTP; bundled Monaco editing/search/folding/formatting                                                  |
-| Transport              | Real HTTP/1.1 and HTTPS outside browser CORS; timeout/cancel; bounded redirects; verified TLS default; TLS override and HTTP/HTTPS proxies; cookies; gzip/deflate/Brotli; binary retention; meaningful errors                |
-| Responses              | Actual status/text, duration and decoded size; headers/cookies; pretty/raw/editor views; scriptless HTML and image preview; JSON folding/search; malformed JSON fallback; copy and native save/download                      |
-| Workspaces/collections | Create/rename/delete workspaces/collections; nested folders; saved requests, duplication, movement and ordering; descriptions; inherited collection/folder authorization and scripts                                         |
-| Variables              | Globals, collection, environment and request/local scopes; environment CRUD/selection; secret masking; recursive substitution; missing/cycle errors; supported dynamic variables                                             |
-| Authentication         | None, Basic, Bearer, header/query API key, custom headers, inherited auth, Digest; real OAuth client-credentials and refresh-token acquisition using HTTP Basic client authentication                                        |
-| Scripts/tests          | Isolated QuickJS pre/post scripts; common synchronous pm scope/response/assertion APIs; named pass/fail results; errors/resource bounds; persisted global/environment/collection mutations                                   |
-| Runner                 | Sequential requests, iterations, delay, cancellation, inherited scripts, variable chaining, pass/fail summary and result export                                                                                              |
-| Interchange            | Editable common Postman v2.1 collections/environments; nested structure/scripts/auth; unsupported-field warnings; safe cURL text import; cURL/HTTP snippets; offline Markdown documentation                                  |
-| Productivity           | History/reopen/clear, cookie manager, redacted console, settings, native response saves and explicit complete-state JSON backup/restore                                                                                      |
-| Live tools             | WebSocket/WSS connect/send/receive/disconnect, subprotocols and binary previews; incremental SSE event/id/multiline and split UTF-8 parsing; authentication/headers/variables/TLS/proxy integration                          |
-| Persistence            | SQLite WAL transactions/previous-state snapshot; protected recognized credentials/encrypted cookies; draft autosave with save status and close flush; adjacent portable runtime directories                                  |
-| Distribution           | Single portable x64 EXE containing Electron/resources; no installer/account/developer runtime needed; original icon; complete TypeScript source and lockfile                                                                 |
+| Area                   | Delivered behavior                                                                                                                                                                                                                                       |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Desktop shell          | Original blue branding; custom title/window controls; workspace bar; navigation rail; explorer; tabs; environment selector; response split; console; dialogs, menus, toasts and tooltips; dark/light/pink themes; persistent app zoom and zoom shortcuts |
+| Layout/navigation      | Resizable explorer/response panes, collapsible explorer, restored window bounds/tabs, dirty indicators, tab drag reorder, collection/request drag organization, context menus, search, URL history suggestions and shortcuts                             |
+| Requests               | Standard/custom HTTP methods; synchronized URL/query rows; enabled/disabled and duplicate headers/params; descriptions, add/delete/reorder and bulk editing; validation/interpolation                                                                    |
+| Bodies                 | None; raw JSON/XML/HTML/JavaScript/text; URL-encoded form; multipart text/files; binary picker uploads; GraphQL over HTTP; bundled Monaco editing/search/folding/formatting                                                                              |
+| Transport              | Real HTTP/1.1 and HTTPS outside browser CORS; timeout/cancel; bounded redirects; verified TLS default; TLS override and HTTP/HTTPS proxies; cookies; gzip/deflate/Brotli; binary retention; meaningful errors                                            |
+| Responses              | Actual status/text, duration and decoded size; headers/cookies; pretty/raw/editor views; scriptless HTML and image preview; JSON folding/search; malformed JSON fallback; copy and native save/download                                                  |
+| Workspaces/collections | Create/rename/delete workspaces/collections; nested folders; saved requests, duplication, movement and ordering; descriptions; inherited collection/folder authorization and scripts                                                                     |
+| Variables              | Globals, collection, environment and request/local scopes; environment CRUD/selection; secret masking; recursive substitution; missing/cycle errors; supported dynamic variables                                                                         |
+| Authentication         | None, Basic, Bearer, header/query API key, custom headers, inherited auth, Digest; real OAuth client-credentials and refresh-token acquisition using HTTP Basic client authentication                                                                    |
+| Scripts/tests          | Isolated QuickJS pre/post scripts; common synchronous pm scope/response/assertion APIs; named pass/fail results; errors/resource bounds; persisted global/environment/collection mutations                                                               |
+| Runner                 | Sequential requests, iterations, delay, cancellation, inherited scripts, variable chaining, pass/fail summary and result export                                                                                                                          |
+| Interchange            | Editable common Postman v2.1 collections/environments; nested structure/scripts/auth; unsupported-field warnings; safe cURL text import; cURL/HTTP snippets; offline Markdown documentation                                                              |
+| Productivity           | History/reopen/clear, cookie manager, redacted console, settings, native response saves and explicit complete-state JSON backup/restore                                                                                                                  |
+| Live tools             | WebSocket/WSS connect/send/receive/disconnect, subprotocols and binary previews; incremental SSE event/id/multiline and split UTF-8 parsing; authentication/headers/variables/TLS/proxy integration                                                      |
+| Persistence            | SQLite WAL transactions/previous-state snapshot; protected recognized credentials/encrypted cookies; draft autosave with save status and close flush; adjacent portable runtime directories                                                              |
+| Distribution           | Single portable x64 EXE containing Electron/resources; no installer/account/developer runtime needed; original icon; complete TypeScript source and lockfile                                                                                             |
 
 ## Partial compatibility and deliberate limits
 

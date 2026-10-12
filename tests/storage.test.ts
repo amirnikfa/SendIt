@@ -20,6 +20,27 @@ afterEach(() => {
   for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
 });
 describe('transactional persistent state', () => {
+  it('loads older settings without zoom and persists pink appearance after reopening', () => {
+    const path = file();
+    let store = new Store(path, codec);
+    const legacyState = initialState();
+    const { zoomPercent: _zoom, ...legacySettings } = legacyState.settings;
+    store.setMeta('state', { ...legacyState, settings: legacySettings });
+    const state = store.load();
+    expect(state.settings.zoomPercent).toBe(100);
+    state.settings.theme = 'pink';
+    state.settings.zoomPercent = 150;
+    store.save(state);
+    store.close();
+    store = new Store(path, codec);
+    expect(store.load()).toEqual(state);
+    for (const zoomPercent of [0, 74, 201, 125.5])
+      expect(() =>
+        store.save({ ...state, settings: { ...state.settings, zoomPercent } }),
+      ).toThrow();
+    expect(store.load()).toEqual(state);
+    store.close();
+  });
   it('updates the previous default title while preserving data and custom titles', () => {
     const store = new Store(file(), codec);
     const state = initialState();

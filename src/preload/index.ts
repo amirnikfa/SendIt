@@ -3,6 +3,7 @@ import type { Bridge } from '../shared/models';
 const bridge: Bridge = {
   load: () => ipcRenderer.invoke('app:load'),
   save: (state) => ipcRenderer.invoke('app:save', state),
+  setZoom: (percent) => ipcRenderer.invoke('window:zoom', percent),
   execute: (id, input) => ipcRenderer.invoke('request:execute', id, input),
   cancel: (id) => ipcRenderer.invoke('request:cancel', id),
   pickFile: () => ipcRenderer.invoke('file:pick'),

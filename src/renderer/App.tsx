@@ -36,6 +36,7 @@ import {
 } from 'lucide-react';
 import {
   newRequest,
+  ZOOM_LEVELS,
   uid,
   type ApiRequest,
   type Collection,
@@ -101,6 +102,33 @@ export default function App() {
     document.documentElement.dataset.theme = settings.theme;
     document.title = settings.title || 'SendIt!';
   }, [settings.theme, settings.title]);
+  useEffect(() => {
+    if (store.ready)
+      void window.workbench.setZoom(settings.zoomPercent).catch((error) => {
+        useStore.getState().notify(`Could not change app zoom: ${String(error)}`, 'error');
+      });
+  }, [settings.zoomPercent, store.ready]);
+  useEffect(() => {
+    const zoomShortcut = (event: KeyboardEvent) => {
+      if (!(event.ctrlKey || event.metaKey) || event.altKey || !useStore.getState().ready) return;
+      const increase = ['+', '='].includes(event.key) || event.code === 'NumpadAdd';
+      const decrease = event.key === '-' || event.code === 'NumpadSubtract';
+      const reset = event.key === '0';
+      if (!increase && !decrease && !reset) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      useStore.getState().change((state) => {
+        const current = state.settings.zoomPercent;
+        state.settings.zoomPercent = reset
+          ? 100
+          : increase
+            ? (ZOOM_LEVELS.find((level) => level > current) ?? ZOOM_LEVELS.at(-1)!)
+            : ([...ZOOM_LEVELS].reverse().find((level) => level < current) ?? ZOOM_LEVELS[0]);
+      });
+    };
+    window.addEventListener('keydown', zoomShortcut, true);
+    return () => window.removeEventListener('keydown', zoomShortcut, true);
+  }, []);
   useEffect(() => {
     localStorage.setItem('aw-expanded', JSON.stringify([...expanded]));
   }, [expanded]);

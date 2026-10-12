@@ -1,8 +1,8 @@
 {
   "artifact": "D:\\Projects\\postman\\source\\dist\\SendIt-Portable-Win-x64.exe",
-  "size": 104911277,
-  "sha256": "c9c829c6b0adb00455adcf96dc0db0926f8d4700d3c6c08dfec833fce781d612",
-  "started": "2026-10-12T10:47:38.992Z",
+  "size": 104912457,
+  "sha256": "ce0bf3bdf9e3ce83a8bd37fab64b15fc75e9d183b8dfeb115adfb9a952b098c3",
+  "started": "2026-10-12T11:03:01.586Z",
   "checks": [
     {
       "name": "Portable launcher starts directly with its bundled runtime",
@@ -29,18 +29,26 @@
       "result": "passed"
     },
     {
+      "name": "Packaged appearance controls apply pink theme and app zoom",
+      "result": "passed"
+    },
+    {
       "name": "Portable application closes cleanly",
       "result": "passed"
     },
     {
       "name": "Portable restart restores its saved collection and request",
       "result": "passed"
+    },
+    {
+      "name": "Portable restart restores pink theme and zoom; reset shortcut remains available",
+      "result": "passed"
     }
   ],
   "runtime": "Chrome/152.0.7977.130",
-  "dataDirectory": "D:\\Projects\\postman\\source\\.test-data\\portable-release-1791802058873\\SendIt-data",
+  "dataDirectory": "D:\\Projects\\postman\\source\\.test-data\\portable-release-1791802981460\\SendIt-data",
   "error": "",
   "windowsVersion": "10.0.26200",
   "architecture": "x64",
-  "finished": "2026-10-12T10:47:58.868Z"
+  "finished": "2026-10-12T11:03:26.103Z"
 }

@@ -274,6 +274,9 @@ function registerIpc() {
         break;
     }
   });
+  handle('window:zoom', (percent) => {
+    window.webContents.setZoomFactor(settingsSchema.shape.zoomPercent.parse(percent) / 100);
+  });
 }
 
 app

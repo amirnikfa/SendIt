@@ -57,6 +57,7 @@ delete env.NODE_PATH;
 let child;
 let browser;
 let page;
+let defaultDpr;
 async function check(name, action) {
   try {
     await action();
@@ -139,9 +140,7 @@ try {
       .fill(`http://127.0.0.1:${fixture.address().port}/release?source=portable`);
     await page.getByTestId('send').click();
     await expect(page.getByTestId('response-status')).toContainText('200 OK', { timeout: 30000 });
-    await expect(page.getByTestId('response-body')).toContainText(
-      'SendIt! release verification',
-    );
+    await expect(page.getByTestId('response-body')).toContainText('SendIt! release verification');
   });
   await check('Packaged selector shows all methods and executes a real POST', async () => {
     await page.getByRole('button', { name: 'Choose HTTP method', exact: true }).click();
@@ -205,6 +204,21 @@ try {
         (await page.evaluate(() => window.workbench.load())).state.workspaces[0].collections.length,
     )
     .toBe(1);
+  await check('Packaged appearance controls apply pink theme and app zoom', async () => {
+    defaultDpr = await page.evaluate(() => devicePixelRatio);
+    await page.getByTestId('settings').click();
+    const dialog = page.getByRole('dialog', { name: 'Settings', exact: true });
+    await dialog.getByRole('button', { name: 'Pink', exact: true }).click();
+    await dialog.getByLabel('App zoom', { exact: true }).selectOption('125');
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'pink');
+    await expect.poll(() => page.evaluate(() => devicePixelRatio)).toBeCloseTo(defaultDpr * 1.25);
+    await expect
+      .poll(
+        async () => (await page.evaluate(() => window.workbench.load())).state.settings.zoomPercent,
+      )
+      .toBe(125);
+    await dialog.getByRole('button', { name: 'Done', exact: true }).click();
+  });
   await check('Portable application closes cleanly', closePortable);
   await check('Portable restart restores its saved collection and request', async () => {
     await launchPortable();
@@ -215,6 +229,23 @@ try {
     await page.getByTestId('send').click();
     await expect(page.getByTestId('response-status')).toContainText('200 OK');
   });
+  await check(
+    'Portable restart restores pink theme and zoom; reset shortcut remains available',
+    async () => {
+      await expect(page.locator('html')).toHaveAttribute('data-theme', 'pink');
+      await expect.poll(() => page.evaluate(() => devicePixelRatio)).toBeCloseTo(defaultDpr * 1.25);
+      expect((await page.evaluate(() => window.workbench.load())).state.settings.zoomPercent).toBe(
+        125,
+      );
+      await page.keyboard.press('Control+0');
+      await expect.poll(() => page.evaluate(() => devicePixelRatio)).toBeCloseTo(defaultDpr);
+      await page.getByTestId('settings').click();
+      const dialog = page.getByRole('dialog', { name: 'Settings', exact: true });
+      await expect(dialog.getByLabel('App zoom', { exact: true })).toHaveValue('100');
+      await dialog.getByRole('button', { name: 'Dark', exact: true }).click();
+      await dialog.getByRole('button', { name: 'Done', exact: true }).click();
+    },
+  );
   const collectionToggle = page
     .locator('.collection-row .tree-item-button[aria-expanded="false"]')
     .first();
