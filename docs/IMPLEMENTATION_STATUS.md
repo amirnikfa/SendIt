@@ -10,7 +10,8 @@ Research and delivery date: 2026-10-11. This is an independent, account-free Win
 - [x] Implement native HTTP transport, authentication, variables and bounded scripting.
 - [x] Implement SQLite persistence, Windows credential protection and adjacent portable storage.
 - [x] Implement the renderer and complete core request/collection/environment workflows.
-- [x] Test deterministic HTTP/TLS/proxy, scripts, storage and interchange: 89 passing tests.
+- [x] Test deterministic HTTP/TLS/proxy, scripts, storage and interchange: 101 passing tests.
+- [x] Implement custom CA trust and exact host/port client certificates; seven desktop certificate checks pass, including Windows encryption and backup restoration.
 - [x] Test real Electron: 24 acceptance checks and 12 extended interaction checks pass.
 - [x] Inspect screenshots in all three themes, at 900 × 640, and for response/tests/live/runner states.
 - [x] Fix discovered build, editor-input, accessibility and test synchronization issues.
@@ -44,7 +45,7 @@ Research and delivery date: 2026-10-11. This is an independent, account-free Win
 - **Postman compatibility:** common editable v2.1 structures, not lossless storage of every extension. Export places folders before direct requests. Examples/cloud metadata/unsupported fields produce warnings. See [IMPORT_COMPATIBILITY.md](IMPORT_COMPATIBILITY.md).
 - **OAuth:** client credentials and refresh-token grants work. Authorization code/PKCE, implicit/password, client-secret-in-body and automatic refresh are absent.
 - **Scripts:** a synchronous documented pm/assertion subset, not the full Postman sandbox/Chai. No pm.sendRequest, pm.request mutation, timers, packages, workflow branching or iteration datasets. See [SCRIPT_API.md](SCRIPT_API.md).
-- **HTTP settings:** TLS, timeout, redirects, proxy and response bounds are application settings rather than per-request overrides. No custom CA/client certificates, SOCKS/PAC, HTTP/2 or system-proxy discovery.
+- **HTTP settings:** TLS, custom CA trust, timeout, redirects, proxy and response bounds are application settings. Client certificates match exact hostname and port. No SOCKS/PAC, HTTP/2 or system-proxy discovery. See [TLS_CERTIFICATES.md](TLS_CERTIFICATES.md).
 - **Responses:** bodies are buffered, not disk-streamed. Text display is a labeled 2 MB preview; saving retains the full bounded response. No JSONPath/XPath filters or custom visualizer templates.
 - **Live:** separate from saved HTTP execution/history. No auto-reconnect, redirects, cookie-jar sharing, Digest, scripts or binary sending. Event logs are bounded.
 - **Portable credentials:** DPAPI protection requires the original Windows account. Cross-account/machine migration uses a plaintext backup exported on the original account and restored to fresh data. Upload files remain external and may need reselecting.

@@ -19,11 +19,17 @@ import {
   environmentSchema,
   executionSchema,
   settingsSchema,
+  clientCertificateSchema,
   stateSchema,
   boundedInput,
 } from '../shared/validation';
 import { HttpEngine } from '../networking/http';
 import { LiveEngine } from '../networking/live';
+import {
+  MAX_CERTIFICATE_BYTES,
+  prepareCertificateFile,
+  validateClientCertificate,
+} from '../networking/certificates';
 import { importText, exportCollection, exportEnvironment } from '../services/interchange';
 
 // The portable launcher extracts program files to TEMP; persistent data belongs beside the launcher.
@@ -108,6 +114,42 @@ async function readDialog(title: string) {
   return readFileSync(file, 'utf8');
 }
 function registerIpc() {
+  handle('certificate:pick', async (value) => {
+    const kind = z.enum(['ca', 'certificate', 'privateKey', 'pfx']).parse(value);
+    const selected = await dialog.showOpenDialog(window, {
+      title:
+        kind === 'ca'
+          ? 'Select a CA certificate'
+          : kind === 'certificate'
+            ? 'Select a client certificate'
+            : kind === 'privateKey'
+              ? 'Select a private key'
+              : 'Select a PFX/P12 certificate',
+      properties: ['openFile'],
+      filters: [
+        {
+          name: 'Certificate files',
+          extensions:
+            kind === 'pfx'
+              ? ['pfx', 'p12']
+              : kind === 'privateKey'
+                ? ['key', 'pem']
+                : ['pem', 'crt', 'cer'],
+        },
+      ],
+    });
+    if (selected.canceled) return null;
+    const file = selected.filePaths[0];
+    if (statSync(file).size > MAX_CERTIFICATE_BYTES)
+      throw new Error('Certificate files must be no larger than 256 KB.');
+    return prepareCertificateFile(kind, {
+      name: basename(file),
+      data: readFileSync(file).toString('base64'),
+    });
+  });
+  handle('certificate:validate', (value) =>
+    validateClientCertificate(clientCertificateSchema.parse(boundedInput(value))),
+  );
   handle('live:connect', (id, protocol, input) =>
     live.connect(
       z.string().min(1).max(200).parse(id),

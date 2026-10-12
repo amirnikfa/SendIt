@@ -1,0 +1,37 @@
+{
+  "started": "2026-10-12T11:34:05.612Z",
+  "checks": [
+    {
+      "name": "01 Default TLS verification rejects the private test CA",
+      "result": "passed"
+    },
+    {
+      "name": "02 Import a CA file and reject malformed certificate files without changing saved trust",
+      "result": "passed"
+    },
+    {
+      "name": "03 Add a CRT/KEY identity through native file selectors and complete a real mTLS request",
+      "result": "passed"
+    },
+    {
+      "name": "04 Edit to PFX/P12, reject a wrong passphrase, then authenticate with the correct passphrase",
+      "result": "passed"
+    },
+    {
+      "name": "05 Disabling and re-enabling a client certificate affects the next handshake",
+      "result": "passed"
+    },
+    {
+      "name": "06 Windows-protected client credentials survive restart without plaintext in SQLite",
+      "result": "passed"
+    },
+    {
+      "name": "07 Explicit backup includes certificate credentials and restores deleted TLS settings",
+      "result": "passed"
+    }
+  ],
+  "rendererErrors": [],
+  "error": "",
+  "finished": "2026-10-12T11:34:11.719Z",
+  "nativeDialogs": "Native file selectors use real test certificate files; requests, TLS handshakes, persistence and Windows DPAPI are real."
+}

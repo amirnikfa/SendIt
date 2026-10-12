@@ -98,12 +98,34 @@ export interface RequestTab {
   dirty: boolean;
   workspaceId: string;
 }
+export interface CertificateFile {
+  name: string;
+  data: string;
+}
+export type CertificateFileKind = 'ca' | 'certificate' | 'privateKey' | 'pfx';
+export interface ClientCertificate {
+  id: string;
+  enabled: boolean;
+  host: string;
+  port: number;
+  format: 'pem' | 'pfx';
+  certificate?: CertificateFile;
+  privateKey?: CertificateFile;
+  pfx?: CertificateFile;
+  passphrase: string;
+}
+export interface TlsSettings {
+  caEnabled: boolean;
+  caCertificates: CertificateFile[];
+  clientCertificates: ClientCertificate[];
+}
 export interface Settings {
   theme: 'dark' | 'light' | 'pink';
   zoomPercent: number;
   timeoutMs: number;
   followRedirects: boolean;
   verifyTls: boolean;
+  tls: TlsSettings;
   proxyUrl: string;
   maxResponseMb: number;
   sidebarWidth: number;
@@ -185,6 +207,8 @@ export interface Bridge {
   load(): Promise<BootResult>;
   save(state: AppState): Promise<void>;
   setZoom(percent: number): Promise<void>;
+  pickCertificate(kind: CertificateFileKind): Promise<CertificateFile | null>;
+  validateClientCertificate(certificate: ClientCertificate): Promise<void>;
   execute(id: string, input: ExecutionInput): Promise<ExecutionResult>;
   cancel(id: string): Promise<void>;
   pickFile(): Promise<string | null>;
@@ -245,6 +269,7 @@ export const defaultSettings: Settings = {
   timeoutMs: 30000,
   followRedirects: true,
   verifyTls: true,
+  tls: { caEnabled: false, caCertificates: [], clientCertificates: [] },
   proxyUrl: '',
   maxResponseMb: 50,
   sidebarWidth: 272,
@@ -273,6 +298,6 @@ export function initialState(): AppState {
     activeWorkspaceId: workspace.id,
     tabs: [tab],
     activeTabId: tab.id,
-    settings: { ...defaultSettings },
+    settings: structuredClone(defaultSettings),
   };
 }

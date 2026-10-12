@@ -20,14 +20,65 @@ afterEach(() => {
   for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
 });
 describe('transactional persistent state', () => {
+  it('protects client private keys, PFX files and passphrases and decrypts them after restart', () => {
+    const path = file();
+    let store = new Store(path, codec);
+    const state = initialState();
+    const fixture = (name: string) => ({
+      name,
+      data: readFileSync(join('tests/fixtures', name)).toString('base64'),
+    });
+    const key = fixture('client-key.pem');
+    const pfx = fixture('client-identity.p12');
+    state.settings.tls = {
+      caEnabled: true,
+      caCertificates: [fixture('localhost-cert.pem')],
+      clientCertificates: [
+        {
+          id: 'pem',
+          enabled: true,
+          host: 'example.test',
+          port: 443,
+          format: 'pem',
+          certificate: fixture('client-cert.pem'),
+          privateKey: key,
+          passphrase: '',
+        },
+        {
+          id: 'pfx',
+          enabled: true,
+          host: 'example.test',
+          port: 444,
+          format: 'pfx',
+          pfx,
+          passphrase: 'fixture-passphrase',
+        },
+      ],
+    };
+    store.save(state);
+    const stored = JSON.stringify(store.getMeta('state'));
+    expect(stored).not.toContain(key.data);
+    expect(stored).not.toContain(pfx.data);
+    expect(stored).not.toContain('fixture-passphrase');
+    expect(stored).toContain('__aw_sealed');
+    store.close();
+    store = new Store(path, codec);
+    expect(store.load()).toEqual(state);
+    store.close();
+  });
   it('loads older settings without zoom and persists pink appearance after reopening', () => {
     const path = file();
     let store = new Store(path, codec);
     const legacyState = initialState();
-    const { zoomPercent: _zoom, ...legacySettings } = legacyState.settings;
+    const { zoomPercent: _zoom, tls: _tls, ...legacySettings } = legacyState.settings;
     store.setMeta('state', { ...legacyState, settings: legacySettings });
     const state = store.load();
     expect(state.settings.zoomPercent).toBe(100);
+    expect(state.settings.tls).toEqual({
+      caEnabled: false,
+      caCertificates: [],
+      clientCertificates: [],
+    });
     state.settings.theme = 'pink';
     state.settings.zoomPercent = 150;
     store.save(state);

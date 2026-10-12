@@ -1,4 +1,58 @@
 import { z } from 'zod';
+import { certificateHost } from './certificates';
+export const certificateFileSchema = z.object({
+  name: z.string().min(1).max(255),
+  data: z
+    .string()
+    .min(1)
+    .max(349528)
+    .regex(
+      /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/,
+      'Invalid certificate encoding',
+    ),
+});
+export const clientCertificateSchema = z
+  .object({
+    id: z.string().min(1).max(200),
+    enabled: z.boolean(),
+    host: z
+      .string()
+      .min(1)
+      .max(253)
+      .transform((host, context) => {
+        try {
+          return certificateHost(host);
+        } catch (error) {
+          context.addIssue({ code: 'custom', message: (error as Error).message });
+          return z.NEVER;
+        }
+      }),
+    port: z.number().int().min(1).max(65535),
+    format: z.enum(['pem', 'pfx']),
+    certificate: certificateFileSchema.optional(),
+    privateKey: certificateFileSchema.optional(),
+    pfx: certificateFileSchema.optional(),
+    passphrase: z.string().max(4096).default(''),
+  })
+  .refine(
+    (value) =>
+      value.format === 'pem'
+        ? !!value.certificate && !!value.privateKey && !value.pfx
+        : !!value.pfx && !value.certificate && !value.privateKey,
+    'Select a certificate and private key, or a PFX/P12 file.',
+  );
+export const tlsSettingsSchema = z
+  .object({
+    caEnabled: z.boolean().default(false),
+    caCertificates: z.array(certificateFileSchema).max(10).default([]),
+    clientCertificates: z.array(clientCertificateSchema).max(20).default([]),
+  })
+  .refine(
+    (value) =>
+      new Set(value.clientCertificates.map((item) => `${item.host}:${item.port}`)).size ===
+      value.clientCertificates.length,
+    'Only one client certificate may be configured for each hostname and port.',
+  );
 const text = z.string().max(8 * 1024 * 1024);
 const id = z.string().min(1).max(200);
 export const pairSchema = z.object({
@@ -78,6 +132,11 @@ export const settingsSchema = z.object({
   timeoutMs: z.number().int().min(1).max(600000),
   followRedirects: z.boolean(),
   verifyTls: z.boolean(),
+  tls: tlsSettingsSchema.default(() => ({
+    caEnabled: false,
+    caCertificates: [],
+    clientCertificates: [],
+  })),
   proxyUrl: z.string().max(8192),
   maxResponseMb: z.number().min(1).max(50),
   sidebarWidth: z.number().min(160).max(700),

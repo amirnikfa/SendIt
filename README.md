@@ -10,7 +10,7 @@ A local Windows desktop workspace for building, sending, organizing and testing 
 
 Run **`dist/SendIt-Portable-Win-x64.exe`** on Windows 10/11 x64. No installation wizard, administrator privileges, Node.js, npm or Python are required. The launcher temporarily extracts its bundled Electron runtime. Keep the executable in a writable directory; persistent data lives in **`SendIt-data` beside the EXE**. First launch may take longer while the runtime is extracted.
 
-The executable is unsigned. The delivered release is **104,912,457 bytes**, verified by direct launch and restart on Windows 11 Pro x64 (10.0.26200). Windows 10 is targeted but not individually tested. SHA-256: `ce0bf3bdf9e3ce83a8bd37fab64b15fc75e9d183b8dfeb115adfb9a952b098c3`. Detailed evidence is in [TEST_REPORT.md](docs/TEST_REPORT.md) and `dist/RELEASE.json`.
+The executable is unsigned. The delivered release is **104,988,653 bytes**, verified by direct launch and restart on Windows 11 Pro x64 (10.0.26200). Windows 10 is targeted but not individually tested. SHA-256: `a6d8e31dec92fbe24a6b47c7fc92439bbcb334fc814f2fdf5d128c3c94c6305d`. Detailed evidence is in [TEST_REPORT.md](docs/TEST_REPORT.md) and `dist/RELEASE.json`.
 
 The complete source archive is `dist/SendIt-Source.zip`. Extract it, then run the build commands below to recreate a release. The source archive intentionally excludes dependencies, generated program files, test workspace data and proprietary research imagery.
 
@@ -19,6 +19,7 @@ The complete source archive is `dist/SendIt-Source.zip`. Extract it, then run th
 - Native HTTP/HTTPS with standard/custom methods, query synchronization, editable enabled header/parameter rows and bulk editing.
 - JSON, XML, HTML, JavaScript/plain text, URL-encoded forms, multipart files, binary uploads and GraphQL over HTTP.
 - Cancellation, timeouts, redirects, verified TLS by default, HTTP/HTTPS proxies, gzip/deflate/Brotli, persistent cookies, bounded large/binary responses.
+- Custom CA certificates and client certificates for mTLS, using CRT/PEM + KEY or PFX/P12 with optional passphrases.
 - Basic, Bearer, API Key, Digest, OAuth client credentials and refresh-token authentication, plus collection/folder inheritance.
 - Local workspaces, collections, nested folders, descriptions, request duplication/movement, drag organization, search and history.
 - Multiple draft tabs, restart restoration, unsaved indicators, resizable panes, custom window title, dark/light/pink themes, app zoom, context menus and keyboard shortcuts.
@@ -57,6 +58,7 @@ npm test
 npm run build
 npm run test:e2e
 node tests/ui-interactions.mjs
+node tests/certificates-ui.mjs
 npm run package
 node tests/release-smoke.mjs
 ```
@@ -64,6 +66,8 @@ node tests/release-smoke.mjs
 `npm run dev` builds and opens the local desktop application. `npm run build` type-checks and bundles main/preload/renderer. `npm run package` generates the single portable Windows EXE using electron-builder. Some npm versions gate dependency install scripts; the explicit Electron install command above downloads the runtime. The included icon is original and already generated; `powershell -NoProfile -File scripts/icon.ps1` recreates its PNG/ICO assets.
 
 `powershell -NoProfile -File scripts/source-archive.ps1` creates the source ZIP from an explicit file allowlist. Development/build needs network access to package registries and release downloads; normal operation does not need a development server. Build metadata can change the executable hash on subsequent builds.
+
+If the packaging runtime download is unavailable after Electron is installed, use `npm run package -- --config.electronDist=node_modules/electron/dist` to package that installed runtime.
 
 The development data directory is `<project>/SendIt-data`. Existing data folders from earlier versions are reused when no SendIt-data folder exists; saved requests, credentials and custom titles are preserved. Earlier backups and secret variable exports can still be imported. Tests use isolated directories under `.test-data`. For diagnostics/automation, `SENDIT_DATA_DIR` explicitly overrides the storage root. Ordinary portable usage does not need it. A read-only executable directory produces a relocation instruction instead of silently falling back to a profile directory.
 
@@ -89,6 +93,16 @@ pm.test('Successful response', () => {
 
 The complete supported scripting surface is in [SCRIPT_API.md](docs/SCRIPT_API.md). Compatibility details and intentional warnings are in [IMPORT_COMPATIBILITY.md](docs/IMPORT_COMPATIBILITY.md).
 
+## TLS certificates
+
+Open **Settings → Certificates**. Add your CA certificate (`.pem`, `.crt` or `.cer`) to trust internal servers while keeping SSL verification enabled. To use mTLS, add a client certificate for the exact **hostname and port**, choose **CRT / PEM + KEY** or **PFX / P12**, select the files, enter the passphrase if needed, and save. The default HTTPS port is **443**.
+
+These settings apply to HTTPS requests, OAuth token requests, WSS and HTTPS SSE. Private keys, PFX files and passphrases use Windows DPAPI encryption in local storage; explicit backups contain them in plaintext. See [TLS_CERTIFICATES.md](docs/TLS_CERTIFICATES.md) for formats, scope and migration.
+
+| Certificate settings                                                                | Successful mTLS request                                                         |
+| ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| ![Custom CA and client certificate settings](docs/screenshots/tls-certificates.png) | ![Client certificate authenticated request](docs/screenshots/mtls-response.png) |
+
 ## Data and credentials
 
 SQLite commits workspaces, saved requests, drafts, settings and bounded history transactionally. Chromium's profile also stays inside the adjacent data directory. Responses are transient unless explicitly saved.
@@ -99,7 +113,7 @@ Recognized auth secrets, marked secret variable values and sensitive headers use
 
 This release implements the documented local feature set, not complete Postman parity. It excludes Postman cloud sync, collaboration, API networks, AI services and hosted monitors/mocks. Local file exchange, workspaces, descriptions and the runner are the alternatives.
 
-- HTTP/1.1 only; no HTTP/2, gRPC, MQTT, Socket.IO, MCP, client certificates or AWS signing.
+- HTTP/1.1 only; no HTTP/2, gRPC, MQTT, Socket.IO, MCP or AWS signing.
 - OAuth supports client credentials and refresh-token grants with HTTP Basic client authentication. Authorization code/PKCE, implicit and automatic token refresh are not implemented.
 - Scripts are synchronous, bounded QuickJS programs with a documented subset of `pm`/assertions. No async timers, `pm.sendRequest`, external packages, complete Chai compatibility, iteration datasets or workflow branching.
 - Uploads and decoded responses are buffered and limited to 50 MB. The renderer shows a labeled 2 MB text preview; saving retains the full response. Workspace/import limits are documented in the implementation report.

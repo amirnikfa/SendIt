@@ -26,6 +26,12 @@ Recognized credential fields and sensitive headers are individually encrypted wi
 
 BrowserWindow uses contextIsolation, sandbox and no nodeIntegration. Navigation, new windows and permissions are denied. IPC verifies the top-level application sender. Scripts execute in QuickJS WASM with a memory limit and interrupt deadline, never Node eval/vm. Network sizes and timeouts are bounded. TLS verifies certificates by default; insecure mode is explicit. Cross-origin redirects must strip authentication. Persistence writes are serialized and transactional.
 
+## TLS certificates
+
+`src/networking/certificates.ts` prepares shared TLS options for HTTP, OAuth, WSS and SSE. Custom CA files extend `tls.getCACertificates('default')`. Enabled client identities match a canonical exact hostname and port; options are recomputed at each redirect. Proxy connections receive CA trust but no destination client credentials. PEM certificate/key pairs, encrypted PEM keys and PFX/P12 are validated with `tls.createSecureContext`.
+
+Native picker IPC bounds certificate files to 256 KB. The renderer edits a local client draft and validates it before committing settings. Older documents receive empty certificate settings during schema validation. Private-key/PFX bytes and passphrases are encrypted through the existing Windows DPAPI storage codec; public certificates remain plaintext. Explicit full-state backups include the decrypted files. See [TLS_CERTIFICATES.md](TLS_CERTIFICATES.md).
+
 ## Build and QA
 
 Vitest tests engines with deterministic loopback fixtures. Playwright launches Electron for real UI workflows and screenshots. electron-builder produces the x64 portable launcher. A separate release smoke test launches the portable EXE and records Windows process/window evidence. No successful build claim substitutes for launch verification.

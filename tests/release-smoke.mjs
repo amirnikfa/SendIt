@@ -1,5 +1,6 @@
 import { chromium, expect } from '@playwright/test';
 import { createServer } from 'node:http';
+import { createServer as createHttpsServer } from 'node:https';
 import { spawn } from 'node:child_process';
 import { mkdir, copyFile, readFile, stat, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
@@ -46,6 +47,30 @@ const fixture = createServer((req, res) => {
   );
 });
 await new Promise((done) => fixture.listen(0, '127.0.0.1', done));
+const certificateFile = async (name) => ({
+  name,
+  data: (await readFile(join(root, 'tests', 'fixtures', name))).toString('base64'),
+});
+const ca = await certificateFile('localhost-cert.pem');
+const tlsFixture = createHttpsServer(
+  {
+    cert: Buffer.from(ca.data, 'base64'),
+    key: await readFile(join(root, 'tests', 'fixtures', 'localhost-key.pem')),
+    ca: Buffer.from(ca.data, 'base64'),
+    requestCert: true,
+    rejectUnauthorized: true,
+  },
+  (req, res) => {
+    res.writeHead(200, { 'content-type': 'application/json' });
+    res.end(
+      JSON.stringify({
+        authorized: req.socket.authorized,
+        client: req.socket.getPeerCertificate().subject.CN,
+      }),
+    );
+  },
+);
+await new Promise((done) => tlsFixture.listen(0, '127.0.0.1', done));
 const portServer = createServer();
 await new Promise((done) => portServer.listen(0, '127.0.0.1', done));
 const debugPort = portServer.address().port;
@@ -252,6 +277,60 @@ try {
   if (await collectionToggle.count()) await collectionToggle.click();
   await mkdir(join(root, 'docs', 'screenshots'), { recursive: true });
   await page.screenshot({ path: join(root, 'docs', 'screenshots', 'portable-release.png') });
+  await check(
+    'Packaged TLS validates custom CA and authenticates CRT/KEY and PFX client identities',
+    async () => {
+      const boot = await page.evaluate(() => window.workbench.load());
+      const request = boot.state.tabs.find((t) => t.id === boot.state.activeTabId).request;
+      request.url = `https://127.0.0.1:${tlsFixture.address().port}/mtls`;
+      request.preScript = '';
+      request.postScript = '';
+      const common = {
+        id: 'portable-client',
+        enabled: true,
+        host: '127.0.0.1',
+        port: tlsFixture.address().port,
+      };
+      const clients = [
+        {
+          ...common,
+          format: 'pem',
+          certificate: await certificateFile('client-cert.pem'),
+          privateKey: await certificateFile('client-key.pem'),
+          passphrase: '',
+        },
+        {
+          ...common,
+          format: 'pfx',
+          pfx: await certificateFile('client-identity.p12'),
+          passphrase: 'fixture-passphrase',
+        },
+      ];
+      for (const client of clients) {
+        await page.evaluate((value) => window.workbench.validateClientCertificate(value), client);
+        const result = await page.evaluate(
+          (input) => window.workbench.execute('portable-tls-check', input),
+          {
+            request,
+            settings: {
+              ...boot.state.settings,
+              verifyTls: true,
+              tls: { caEnabled: true, caCertificates: [ca], clientCertificates: [client] },
+            },
+            globals: [],
+            environment: [],
+            collectionVariables: [],
+          },
+        );
+        expect(result.response.error).toBeUndefined();
+        expect(result.response.status).toBe(200);
+        expect(JSON.parse(result.response.body)).toEqual({
+          authorized: true,
+          client: 'SendIt Test Client',
+        });
+      }
+    },
+  );
   await closePortable();
 } catch (error) {
   report.error = String(error);
@@ -263,6 +342,7 @@ try {
   await browser?.close().catch(() => {});
   child?.kill();
   await new Promise((done) => fixture.close(done));
+  await new Promise((done) => tlsFixture.close(done));
   report.finished = new Date().toISOString();
   await writeFile(
     join(root, 'docs', 'PORTABLE_VERIFICATION.json'),

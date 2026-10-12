@@ -1,8 +1,8 @@
 {
   "artifact": "D:\\Projects\\postman\\source\\dist\\SendIt-Portable-Win-x64.exe",
-  "size": 104912457,
-  "sha256": "ce0bf3bdf9e3ce83a8bd37fab64b15fc75e9d183b8dfeb115adfb9a952b098c3",
-  "started": "2026-10-12T11:03:01.586Z",
+  "size": 104988653,
+  "sha256": "a6d8e31dec92fbe24a6b47c7fc92439bbcb334fc814f2fdf5d128c3c94c6305d",
+  "started": "2026-10-12T11:44:27.659Z",
   "checks": [
     {
       "name": "Portable launcher starts directly with its bundled runtime",
@@ -43,12 +43,16 @@
     {
       "name": "Portable restart restores pink theme and zoom; reset shortcut remains available",
       "result": "passed"
+    },
+    {
+      "name": "Packaged TLS validates custom CA and authenticates CRT/KEY and PFX client identities",
+      "result": "passed"
     }
   ],
   "runtime": "Chrome/152.0.7977.130",
-  "dataDirectory": "D:\\Projects\\postman\\source\\.test-data\\portable-release-1791802981460\\SendIt-data",
+  "dataDirectory": "D:\\Projects\\postman\\source\\.test-data\\portable-release-1791805467537\\SendIt-data",
   "error": "",
   "windowsVersion": "10.0.26200",
   "architecture": "x64",
-  "finished": "2026-10-12T11:03:26.103Z"
+  "finished": "2026-10-12T11:44:51.924Z"
 }

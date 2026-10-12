@@ -47,6 +47,7 @@ import {
   copyText,
 } from './components';
 import { CodeEditor } from './Editor';
+import { CertificateSettings } from './CertificateSettings';
 import { LiveDialog } from './LiveDialog';
 import { toCurl, toHttp, toMarkdown } from '../services/interchange';
 import { activeWorkspace, flushSave, requestContext, useStore } from './store';
@@ -597,7 +598,7 @@ function SettingsDialog({ close }: { close: () => void }) {
       }
     >
       <div className="dialog-tabs">
-        {['General', 'Network', 'Data', 'Shortcuts'].map((t) => (
+        {['General', 'Network', 'Certificates', 'Data', 'Shortcuts'].map((t) => (
           <button className={tab === t ? 'active' : ''} key={t} onClick={() => setTab(t)}>
             {t}
           </button>
@@ -717,6 +718,7 @@ function SettingsDialog({ close }: { close: () => void }) {
           </Field>
         </>
       )}
+      {tab === 'Certificates' && <CertificateSettings />}
       {tab === 'Data' && (
         <>
           <div className="data-location">

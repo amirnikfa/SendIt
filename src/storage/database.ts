@@ -11,7 +11,12 @@ export interface SecretCodec {
 }
 const sensitiveHeader =
   /^(authorization|proxy-authorization|cookie|set-cookie|x-api-key|api-key|x-auth-token)$/i;
-function transform(value: unknown, codec: SecretCodec, encrypt: boolean): unknown {
+function transform(
+  value: unknown,
+  codec: SecretCodec,
+  encrypt: boolean,
+  secretFile = false,
+): unknown {
   if (!value || typeof value !== 'object') return value;
   if (Array.isArray(value)) return value.map((v) => transform(v, codec, encrypt));
   const obj = value as Record<string, unknown>;
@@ -20,7 +25,8 @@ function transform(value: unknown, codec: SecretCodec, encrypt: boolean): unknow
   return Object.fromEntries(
     Object.entries(obj).map(([key, val]) => {
       const secret =
-        ['token', 'password', 'clientSecret', 'refreshToken'].includes(key) ||
+        ['token', 'password', 'clientSecret', 'refreshToken', 'passphrase'].includes(key) ||
+        (key === 'data' && secretFile) ||
         (key === 'value' &&
           (obj.secret === true ||
             obj.type === 'apikey' ||
@@ -29,7 +35,7 @@ function transform(value: unknown, codec: SecretCodec, encrypt: boolean): unknow
         key,
         encrypt && secret && typeof val === 'string' && val
           ? { __aw_sealed: codec.seal(val) }
-          : transform(val, codec, encrypt),
+          : transform(val, codec, encrypt, key === 'privateKey' || key === 'pfx'),
       ];
     }),
   );

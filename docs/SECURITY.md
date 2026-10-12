@@ -16,6 +16,12 @@ SQLite commits state atomically with WAL and FULL synchronization. A previous st
 
 Descriptions, URLs, raw request bodies and unmarked ordinary variable values remain plaintext in SQLite. Do not embed secrets there; use marked variables or auth fields. Request history stores request configuration with the same protection rules. Response bodies are not persisted automatically. The console records request names/status plus redacted script output, not complete raw HTTP traffic. Redaction cannot infer every application-specific secret that a script constructs or transforms.
 
+## Certificate credentials
+
+Custom CA trust extends the runtime's default CA set while preserving server and hostname verification. Client identities are selected by exact normalized hostname and port on each TLS request, including redirects. Plain HTTP receives no client identity, and HTTPS proxies receive trust options without the destination's private credentials. Certificate import requires native file selection, with a 256 KB file limit; malformed identities and incorrect passphrases are rejected before saving.
+
+Private-key bytes, PFX/P12 bytes and certificate passphrases receive the same Windows DPAPI protection as recognized auth credentials, including retained state snapshots. Public certificate and CA bytes remain plaintext. Explicit full-state backups contain these credentials unencrypted; collection/environment exports do not include application certificate settings. See [TLS_CERTIFICATES.md](TLS_CERTIFICATES.md).
+
 ## Release scope
 
 The release has no telemetry, application-owned backend, login or automatic updater. Executable signing requires a publisher certificate and is outside this build. Keep the release and its Electron runtime current by rebuilding/upgrading. The release is functionally tested locally; it has not undergone an independent penetration test or broad enterprise deployment validation.

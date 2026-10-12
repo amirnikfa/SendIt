@@ -2746,6 +2746,74 @@ kbd {
 :root[data-theme='pink'] .method-head {
   color: #247f83;
 }
+.certificate-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+.certificate-settings h3 {
+  font-size: 12px;
+  margin-bottom: 10px;
+}
+.certificate-settings .help {
+  margin: 10px 0;
+}
+.certificate-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border-soft);
+  margin-bottom: 12px;
+}
+.certificate-filename {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+  font-size: 11px;
+}
+.certificate-details {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 5px;
+}
+.certificate-details strong {
+  overflow-wrap: anywhere;
+}
+.certificate-form {
+  margin-top: 14px;
+  border: 1px solid var(--border);
+  padding: 16px;
+  border-radius: 7px;
+}
+.certificate-form fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.certificate-form .two-fields {
+  margin-top: 0;
+}
+.certificate-file-control {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.certificate-form .inline-actions {
+  flex-wrap: wrap;
+}
+.certificate-error {
+  color: var(--red);
+  font-size: 12px;
+  line-height: 1.6;
+}
 .warning {
   display: flex;
   align-items: center;

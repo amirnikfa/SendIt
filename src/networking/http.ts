@@ -20,6 +20,7 @@ import type {
 } from '../shared/models';
 import { interpolate, redact, resolveObject, variableMap } from '../services/variables';
 import { runScript, type ScriptState } from '../services/scripts';
+import { certificateOptions, certificateTrust } from './certificates';
 
 const MAX_BYTES = 50 * 1024 * 1024;
 const row = (key: string, value: string): Pair => ({ id: randomUUID(), key, value, enabled: true });
@@ -260,8 +261,8 @@ export class HttpEngine {
     }
     const agent = proxy
       ? url.protocol === 'https:'
-        ? new HttpsProxyAgent(proxy, { rejectUnauthorized: settings.verifyTls !== false })
-        : new HttpProxyAgent(proxy, { rejectUnauthorized: settings.verifyTls !== false })
+        ? new HttpsProxyAgent(proxy, certificateTrust(settings))
+        : new HttpProxyAgent(proxy, certificateTrust(settings))
       : undefined;
     const cookie = await this.jar.getCookieString(url.href);
     if (cookie && !getHeader(headers, 'cookie')) headers = [...headers, ['Cookie', cookie]];
@@ -286,7 +287,7 @@ export class HttpEngine {
           method,
           headers: outgoing,
           agent,
-          rejectUnauthorized: settings.verifyTls !== false,
+          ...certificateOptions(url, settings),
           signal,
         },
         (response) => {

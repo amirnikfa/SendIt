@@ -7,15 +7,15 @@ Date: 2026-10-12. Final results below refer to the delivered source and portable
 | Property   | Recorded value                                                                       |
 | ---------- | ------------------------------------------------------------------------------------ |
 | Artifact   | `dist/SendIt-Portable-Win-x64.exe`                                                   |
-| File size  | **104,912,457 bytes** (100.05 MiB)                                                   |
-| SHA-256    | `ce0bf3bdf9e3ce83a8bd37fab64b15fc75e9d183b8dfeb115adfb9a952b098c3`                   |
+| File size  | **104,988,653 bytes** (100.12 MiB)                                                   |
+| SHA-256    | `a6d8e31dec92fbe24a6b47c7fc92439bbcb334fc814f2fdf5d128c3c94c6305d`                   |
 | Format     | electron-builder single Windows x64 portable launcher; no installation wizard        |
 | Signing    | **Unsigned**; independently checked with Get-AuthenticodeSignature                   |
 | Test host  | **Windows 11 Pro, 10.0.26200, x64**                                                  |
 | Runtime    | Electron 44.7.0; Chromium 152.0.7977.130; bundled Node 24.21.0; native SQLite 3.53.4 |
 | Windows 10 | Targeted, **not individually runtime-tested**                                        |
 
-`tests/release-smoke.mjs` copied the actual EXE to a fresh directory and started that launcher directly with `child_process.spawn`. The app loaded its renderer from packaged `app.asar`. The test removed developer Electron/Node/data override variables, connected automation to Chromium, and verified all **ten release checks**:
+`tests/release-smoke.mjs` copied the actual EXE to a fresh directory and started that launcher directly with `child_process.spawn`. The app loaded its renderer from packaged `app.asar`. The test removed developer Electron/Node/data override variables, connected automation to Chromium, and verified all **eleven release checks**:
 
 1. Direct launch using the runtime bundled in the portable EXE.
 2. Creation of `SendIt-data/workbench.sqlite` beside the launcher, not the temporary extraction directory.
@@ -27,6 +27,7 @@ Date: 2026-10-12. Final results below refer to the delivered source and portable
 8. Show all seven methods in the packaged dropdown, select POST, verify the server receives POST, then select and resend GET.
 9. Apply the pink theme and 125% app zoom through the packaged settings controls.
 10. Restore pink and 125% zoom after restart, then reset zoom with Ctrl+0.
+11. Authenticate real mTLS requests with custom CA trust and both CRT/KEY and PFX/P12 client identities in the packaged runtime.
 
 No development server, installed Electron, Python or external Node executable was launched by the application. Node/Playwright drive the test harness only. The host has development tools installed, so this is not a pristine VM certification. A debug port is supplied only by the test launcher; ordinary launch does not enable it.
 
@@ -34,7 +35,7 @@ Machine-readable evidence: [PORTABLE_VERIFICATION.json](PORTABLE_VERIFICATION.js
 
 ## Automated unit and integration tests
 
-**89 passed, 0 failed, 0 skipped**, across five files. TypeScript checking and the production build also pass. Raw results: [UNIT_TEST_RESULTS.json](UNIT_TEST_RESULTS.json).
+**101 passed, 0 failed, 0 skipped**, across six files. TypeScript checking and the production build also pass. Raw results: [UNIT_TEST_RESULTS.json](UNIT_TEST_RESULTS.json).
 
 | Suite                 | Passed | Important coverage                                                                                                                                                                                                                                      |
 | --------------------- | -----: | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -42,13 +43,14 @@ Machine-readable evidence: [PORTABLE_VERIFICATION.json](PORTABLE_VERIFICATION.js
 | HTTP engine           |     18 | GET/JSON/headers/params, scopes/scripts, Basic/Bearer/API key/Digest, OAuth grants, forms/multipart/binary/GraphQL, compression, cookies, redirects and credential stripping, proxy/CONNECT, default TLS verification, cancellation/timeout/size/errors |
 | Live protocols        |     10 | WS messages/fragmentation/binary/subprotocols, auth/variables, disconnect/limits, incremental SSE UTF-8/BOM/CRLF/multiline, MIME/redirect rejection, timeout, TLS/proxy                                                                                 |
 | Scripts and variables |      7 | Assertions/scope APIs, no host capabilities, infinite-loop/memory bounds, async-test rejection, syntax errors/isolation, recursive scope precedence and missing/cyclic references                                                                       |
-| Storage               |      6 | SQLite reopen persistence, secret-codec boundary, protected cookie persistence, rejected invalid writes/previous snapshot, cyclic-folder rejection, legacy zoom defaults and pink/zoom persistence                                                      |
+| Storage               |      7 | SQLite reopen, encrypted cookies and certificate credentials, snapshots, invalid writes, legacy defaults and appearance                                                                                                                                 |
+| TLS certificates      |     11 | Custom CA trust, PEM/encrypted key/PFX mTLS, scope isolation, redirects, OAuth, proxies and live protocols                                                                                                                                              |
 
 Storage unit tests inject a deterministic test codec to exercise serialization. Real Electron QA uses Windows DPAPI and reopens a workspace containing a marked secret. This does not replace cryptographic or penetration testing.
 
 ## Mandatory desktop acceptance scenarios
 
-All requested scenarios were exercised. The full desktop suite uses real Electron/React/Monaco, IPC, native transport and SQLite. Native open/save dialogs return deterministic fixture paths; file bytes and persistence remain real. Collection export validates the real export bridge and output file. The full suite ran against the built application in development Electron; the separately packaged EXE has the eight checks above.
+All requested scenarios were exercised. The full desktop suite uses real Electron/React/Monaco, IPC, native transport and SQLite. Native open/save dialogs return deterministic fixture paths; file bytes and persistence remain real. Collection export validates the real export bridge and output file. The full suite ran against the built application in development Electron; the separately packaged EXE has the eleven checks above.
 
 | Requested scenarios                                     | Result/evidence                                                                               |
 | ------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
@@ -67,6 +69,12 @@ All requested scenarios were exercised. The full desktop suite uses real Electro
 The desktop script has **24 passed checks**; item 22 is recorded in the separate portable report, not counted twice. Raw evidence: [E2E_DEVELOPMENT_RESULTS.json](E2E_DEVELOPMENT_RESULTS.json).
 
 The extended UI suite adds **12 passed checks**, with zero renderer exceptions: nested-folder context menus; scripted save/duplicate; dialog movement and request drag/reorder; tab drag; pane resize/collapse and minimum window; real two-request runner with assertions; secret environment export/import; backup/change/restore; immediate unsaved edit flush during native close and restart; dark/light/pink switching and matching Monaco backgrounds; native app zoom at 75%, 125%, 150% and 200%, shortcuts inside editors and rejected invalid IPC values; appearance persistence after restart and zoom reset at the 900 × 640 minimum window. Evidence: [UI_INTERACTIONS_RESULTS.json](UI_INTERACTIONS_RESULTS.json).
+
+## Certificate acceptance
+
+The eleven certificate integration tests verify custom CA trust with default roots retained; CRT/KEY, encrypted PEM and PFX/P12 mTLS; wrong-password/key and invalid-file rejection; exact host/port scopes; redirect isolation; OAuth token acquisition; and actual WSS/SSE handshakes directly and through HTTP/HTTPS proxies. The HTTPS proxy observes no destination client identity. An additional storage test verifies private-key/PFX/passphrase encryption and exact reopen restoration, bringing storage coverage to seven cases.
+
+All **seven certificate desktop checks pass**, with no renderer exceptions. Native file selectors import actual fixtures; a real mTLS server authenticates the client. The checks cover default CA rejection, custom CA import and malformed-file rejection, CRT/KEY success, PFX editing and wrong-password rejection, enable/disable, Windows DPAPI protection and restart, and explicit backup restoration after certificate removal. Evidence: [CERTIFICATES_UI_RESULTS.json](CERTIFICATES_UI_RESULTS.json). Captures: [certificate settings](screenshots/tls-certificates.png) and [authenticated response](screenshots/mtls-response.png).
 
 ## Visual inspection and defects resolved
 
@@ -102,9 +110,10 @@ npm test
 npm run build
 node tests/e2e.mjs
 node tests/ui-interactions.mjs
+node tests/certificates-ui.mjs
 npm run package
 node tests/release-smoke.mjs
 Get-FileHash dist/SendIt-Portable-Win-x64.exe -Algorithm SHA256
 ```
 
-Builds require network access to npm and Electron/electron-builder release downloads. Ordinary use requires no app-owned service. Rebuilding may produce a different hash because packaging metadata can vary; verify the hash of the artifact actually distributed.
+Builds require network access to npm and Electron/electron-builder release downloads. For this certificate release, a stalled runtime download was bypassed with `npm run package -- --config.electronDist=node_modules/electron/dist`, using the installed Electron 44.7.0 distribution. Ordinary use requires no app-owned service. Rebuilding may produce a different hash because packaging metadata can vary; verify the hash of the artifact actually distributed.

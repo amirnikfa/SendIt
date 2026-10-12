@@ -6,6 +6,7 @@ import { HttpProxyAgent } from 'http-proxy-agent';
 import { HttpsProxyAgent } from 'https-proxy-agent';
 import type { Auth, ExecutionInput, LiveEvent } from '../shared/models';
 import { interpolate, redact, variableMap } from '../services/variables';
+import { certificateOptions, certificateTrust } from './certificates';
 
 const MAX_MESSAGE = 1024 * 1024;
 const MAX_CONNECTIONS = 4;
@@ -205,7 +206,6 @@ export class LiveEngine {
     if (this.connections.size >= MAX_CONNECTIONS)
       throw new Error('At most four live connections can be open. Disconnect one first.');
     const { url, headers, secrets, proxy } = prepare(protocol, input);
-    const verify = input.settings.verifyTls !== false;
     const timeoutMs = Math.max(1, Math.min(600000, input.settings.timeoutMs || 30000));
     return new Promise<void>((resolve, reject) => {
       let stop = () => {};
@@ -255,7 +255,7 @@ export class LiveEngine {
         if (protocol === 'websocket') {
           // CONNECT supports ws and wss without exposing credentials to redirect targets.
           const agent = proxy
-            ? new HttpsProxyAgent(proxy, { rejectUnauthorized: verify })
+            ? new HttpsProxyAgent(proxy, certificateTrust(input.settings))
             : undefined;
           const protocolHeader = headers['sec-websocket-protocol'];
           const subprotocols = protocolHeader
@@ -268,7 +268,7 @@ export class LiveEngine {
           const socket = new WebSocket(url, subprotocols, {
             headers,
             agent,
-            rejectUnauthorized: verify,
+            ...certificateOptions(url, input.settings),
             handshakeTimeout: timeoutMs,
             followRedirects: false,
             perMessageDeflate: false,
@@ -328,15 +328,15 @@ export class LiveEngine {
           const transport = url.protocol === 'https:' ? https : http;
           const agent = proxy
             ? url.protocol === 'https:'
-              ? new HttpsProxyAgent(proxy, { rejectUnauthorized: verify })
-              : new HttpProxyAgent(proxy, { rejectUnauthorized: verify })
+              ? new HttpsProxyAgent(proxy, certificateTrust(input.settings))
+              : new HttpProxyAgent(proxy, certificateTrust(input.settings))
             : undefined;
           headers.accept = 'text/event-stream';
           headers['accept-encoding'] = 'identity';
           headers['cache-control'] = 'no-cache';
           const request = transport.request(
             url,
-            { method: 'GET', headers, agent, rejectUnauthorized: verify },
+            { method: 'GET', headers, agent, ...certificateOptions(url, input.settings) },
             (response) => {
               if (connection.done) {
                 response.destroy();

@@ -2,6 +2,8 @@
 
 Classification is priority, not a claim of completion. See IMPLEMENTATION_STATUS.md for actual delivery status.
 
+Custom CA trust and client certificates are implemented: PEM/DER CA files extend default trust; CRT/KEY and PFX/P12 client identities match exact hostname/port. Acceptance includes real HTTPS/OAuth/WSS/SSE handshakes, redirects, HTTP/HTTPS proxies, desktop import, encrypted restart and backup restoration. See [TLS_CERTIFICATES.md](TLS_CERTIFICATES.md) and [CERTIFICATES_UI_RESULTS.json](CERTIFICATES_UI_RESULTS.json).
+
 | Feature                                       | Class                                     | Implementation approach / expected behavior                            | Acceptance criterion                                                                |
 | --------------------------------------------- | ----------------------------------------- | ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
 | HTTP/custom methods                           | Essential                                 | Native Node HTTP/HTTPS engine                                          | Local fixture observes method, bytes and headers                                    |

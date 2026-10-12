@@ -4,6 +4,9 @@ const bridge: Bridge = {
   load: () => ipcRenderer.invoke('app:load'),
   save: (state) => ipcRenderer.invoke('app:save', state),
   setZoom: (percent) => ipcRenderer.invoke('window:zoom', percent),
+  pickCertificate: (kind) => ipcRenderer.invoke('certificate:pick', kind),
+  validateClientCertificate: (certificate) =>
+    ipcRenderer.invoke('certificate:validate', certificate),
   execute: (id, input) => ipcRenderer.invoke('request:execute', id, input),
   cancel: (id) => ipcRenderer.invoke('request:cancel', id),
   pickFile: () => ipcRenderer.invoke('file:pick'),
