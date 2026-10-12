@@ -1,0 +1,56 @@
+{
+  "started": "2026-10-11T10:51:49.169Z",
+  "runDirectory": "C:\\Users\\Amir\\Desktop\\postman\\.test-data\\ui-interactions-1791715909168",
+  "dataDirectory": "C:\\Users\\Amir\\Desktop\\postman\\.test-data\\ui-interactions-1791715909168\\ApiWorkbench-data",
+  "checks": [
+    {
+      "name": "01 Create a collection and nested folders through real context menus",
+      "result": "passed",
+      "milliseconds": 1892
+    },
+    {
+      "name": "02 Save a scripted request in a nested folder and duplicate it",
+      "result": "passed",
+      "milliseconds": 1243
+    },
+    {
+      "name": "03 Move a request with a dialog, drag it between folders, and reorder requests",
+      "result": "passed",
+      "milliseconds": 1556
+    },
+    {
+      "name": "04 Reorder request tabs with a real drag operation",
+      "result": "passed",
+      "milliseconds": 474
+    },
+    {
+      "name": "05 Resize and collapse panels; render at the minimum 900 by 640 window",
+      "result": "passed",
+      "milliseconds": 1180
+    },
+    {
+      "name": "06 Run two saved requests sequentially and inspect genuine assertion results",
+      "result": "passed",
+      "milliseconds": 515
+    },
+    {
+      "name": "07 Export and reimport an environment, including a secret variable",
+      "result": "passed",
+      "milliseconds": 1075
+    },
+    {
+      "name": "08 Export a backup, change the workspace, and restore the original data",
+      "result": "passed",
+      "milliseconds": 1216
+    },
+    {
+      "name": "09 Flush an immediately edited tab on native close and restore it on restart",
+      "result": "passed",
+      "milliseconds": 739
+    }
+  ],
+  "rendererErrors": [],
+  "nativeDialogs": "Native open/save paths and restore confirmation are stubbed only inside this fresh QA workspace. Drag, editing, menus, scripts, networking and filesystem persistence remain real.",
+  "finished": "2026-10-11T10:51:59.170Z",
+  "error": ""
+}

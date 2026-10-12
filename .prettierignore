@@ -1,0 +1,8 @@
+node_modules
+build
+dist
+research
+.test-data
+docs/*RESULTS.json
+docs/dependency-audit.json
+package-lock.json

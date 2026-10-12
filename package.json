@@ -1,0 +1,51 @@
+{
+  "name": "apiworkbench",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "An offline-first API development workbench for Windows",
+  "author": "ApiWorkbench contributors",
+  "license": "MIT",
+  "main": "build/main/index.cjs",
+  "scripts": {
+    "dev": "npm run build && electron .",
+    "build": "tsc --noEmit && node scripts/build.mjs && vite build",
+    "test": "vitest run",
+    "test:e2e": "node tests/e2e.mjs",
+    "package": "npm run build && electron-builder --win portable --x64",
+    "check": "tsc --noEmit",
+    "format": "prettier --write src tests scripts *.json *.ts *.yml README.md docs/*.md"
+  },
+  "dependencies": {
+    "http-proxy-agent": "^7.0.2",
+    "https-proxy-agent": "^7.0.6",
+    "quickjs-emscripten": "^0.32.0",
+    "tough-cookie": "^6.0.0",
+    "ws": "^8.22.0",
+    "zod": "^4.1.12"
+  },
+  "overrides": {
+    "dompurify": "3.4.16"
+  },
+  "devDependencies": {
+    "@monaco-editor/react": "^4.7.0",
+    "lucide-react": "^0.468.0",
+    "monaco-editor": "^0.57.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "zustand": "^5.0.8",
+    "@playwright/test": "^1.56.0",
+    "@types/node": "^24.10.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@types/ws": "^8.18.2",
+    "@vitejs/plugin-react": "^6.0.0",
+    "electron": "44.7.0",
+    "electron-builder": "26.15.3",
+    "esbuild": "^0.28.2",
+    "prettier": "^3.9.10",
+    "typescript": "^5.9.3",
+    "vite": "8.3.4",
+    "vitest": "^4.0.8"
+  }
+}

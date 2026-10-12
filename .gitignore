@@ -1,0 +1,8 @@
+node_modules/
+build/
+dist/
+ApiWorkbench-data/
+.test-data/
+research/
+test-results/
+*.log

@@ -1,0 +1,100 @@
+.live-tool {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.live-address {
+  display: flex;
+  gap: 8px;
+}
+.live-address select {
+  width: 180px;
+}
+.live-address input {
+  flex: 1;
+  min-width: 0;
+  font-family: Consolas, monospace;
+}
+.live-feed-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 12px;
+}
+.live-state {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.live-state.connected {
+  color: #42bc8b;
+}
+.live-state.connecting {
+  color: #e5b45a;
+}
+.live-feed {
+  height: 320px;
+  overflow: auto;
+  border: 1px solid var(--border, #34373c);
+  border-radius: 6px;
+  background: var(--bg, #141619);
+}
+.live-event {
+  border-bottom: 1px solid var(--border, #34373c);
+  padding: 10px 14px;
+}
+.live-event > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--muted, #9098a4);
+}
+.live-event strong {
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+}
+.live-event time {
+  margin-left: auto;
+}
+.live-event pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font:
+    12px/1.6 Consolas,
+    monospace;
+  margin: 5px 0 0;
+}
+.live-event.sent > div {
+  color: #6b9dff;
+}
+.live-event.error > div {
+  color: #ef777f;
+}
+.live-empty {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 12px;
+  color: var(--muted, #9098a4);
+}
+.live-empty p {
+  margin: 0;
+  font-size: 12px;
+}
+.live-composer {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+}
+.live-composer textarea {
+  flex: 1;
+  min-height: 76px;
+  font-family: Consolas, monospace;
+}
+.live-composer button {
+  height: 36px;
+}

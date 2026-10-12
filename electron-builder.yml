@@ -1,0 +1,18 @@
+appId: dev.apiworkbench.desktop
+productName: ApiWorkbench
+directories:
+  output: dist
+files:
+  - build/**/*
+  - package.json
+asar: true
+win:
+  icon: assets/icon.ico
+  target:
+    - target: portable
+      arch: [x64]
+  artifactName: ApiWorkbench-Portable-Win-x64.exe
+  signAndEditExecutable: true
+portable:
+  requestExecutionLevel: user
+npmRebuild: false

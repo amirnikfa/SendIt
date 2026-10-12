@@ -1,0 +1,46 @@
+{
+  "artifact": "C:\\Users\\Amir\\Desktop\\postman\\dist\\ApiWorkbench-Portable-Win-x64.exe",
+  "size": 104623476,
+  "sha256": "59c1ba66c08e7ad2fd406a08df038c0260188e961a076c84e593f3f724edd24a",
+  "started": "2026-10-11T11:31:52.667Z",
+  "checks": [
+    {
+      "name": "Portable launcher starts directly with its bundled runtime",
+      "result": "passed"
+    },
+    {
+      "name": "Persistent data is adjacent to the actual portable EXE",
+      "result": "passed"
+    },
+    {
+      "name": "Packaged request executes real native HTTP and renders its response",
+      "result": "passed"
+    },
+    {
+      "name": "Packaged selector shows all methods and executes a real POST",
+      "result": "passed"
+    },
+    {
+      "name": "Bundled QuickJS executes a real assertion inside the portable build",
+      "result": "passed"
+    },
+    {
+      "name": "Production renderer has no Node globals",
+      "result": "passed"
+    },
+    {
+      "name": "Portable application closes cleanly",
+      "result": "passed"
+    },
+    {
+      "name": "Portable restart restores its saved collection and request",
+      "result": "passed"
+    }
+  ],
+  "runtime": "Chrome/152.0.7977.130",
+  "dataDirectory": "C:\\Users\\Amir\\Desktop\\postman\\.test-data\\portable-release-1791718312542\\ApiWorkbench-data",
+  "error": "",
+  "windowsVersion": "10.0.26200",
+  "architecture": "x64",
+  "finished": "2026-10-11T11:32:12.222Z"
+}
