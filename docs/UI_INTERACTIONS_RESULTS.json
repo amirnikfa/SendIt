@@ -1,71 +1,71 @@
 {
-  "started": "2026-10-12T11:36:30.620Z",
-  "runDirectory": "D:\\Projects\\postman\\source\\.test-data\\ui-interactions-1791804990615",
-  "dataDirectory": "D:\\Projects\\postman\\source\\.test-data\\ui-interactions-1791804990615\\SendIt-data",
+  "started": "2026-10-12T11:58:55.621Z",
+  "runDirectory": "D:\\Projects\\postman\\source\\.test-data\\ui-interactions-1791806335620",
+  "dataDirectory": "D:\\Projects\\postman\\source\\.test-data\\ui-interactions-1791806335620\\SendIt-data",
   "checks": [
     {
       "name": "01 Create a collection and nested folders through real context menus",
       "result": "passed",
-      "milliseconds": 1853
+      "milliseconds": 2099
     },
     {
       "name": "02 Save a scripted request in a nested folder and duplicate it",
       "result": "passed",
-      "milliseconds": 1188
+      "milliseconds": 1174
     },
     {
       "name": "03 Move a request with a dialog, drag it between folders, and reorder requests",
       "result": "passed",
-      "milliseconds": 1576
+      "milliseconds": 1523
     },
     {
       "name": "04 Reorder request tabs with a real drag operation",
       "result": "passed",
-      "milliseconds": 463
+      "milliseconds": 475
     },
     {
       "name": "05 Resize and collapse panels; render at the minimum 900 by 640 window",
       "result": "passed",
-      "milliseconds": 1176
+      "milliseconds": 1177
     },
     {
       "name": "06 Run two saved requests sequentially and inspect genuine assertion results",
       "result": "passed",
-      "milliseconds": 504
+      "milliseconds": 487
     },
     {
       "name": "07 Export and reimport an environment, including a secret variable",
       "result": "passed",
-      "milliseconds": 1050
+      "milliseconds": 1111
     },
     {
       "name": "08 Export a backup, change the workspace, and restore the original data",
       "result": "passed",
-      "milliseconds": 1233
+      "milliseconds": 1239
     },
     {
       "name": "09 Flush an immediately edited tab on native close and restore it on restart",
       "result": "passed",
-      "milliseconds": 685
+      "milliseconds": 684
     },
     {
       "name": "10 Pink theme styles the app and Monaco editors and preserves theme switching",
       "result": "passed",
-      "milliseconds": 2126
+      "milliseconds": 2145
     },
     {
       "name": "11 App zoom scales the native window, works inside editors, and rejects invalid values",
       "result": "passed",
-      "milliseconds": 2138
+      "milliseconds": 2068
     },
     {
       "name": "12 Pink theme and native zoom persist after restart and remain adjustable in a small window",
       "result": "passed",
-      "milliseconds": 878
+      "milliseconds": 938
     }
   ],
   "rendererErrors": [],
   "nativeDialogs": "Native open/save paths and restore confirmation are stubbed only inside this fresh QA workspace. Drag, editing, menus, scripts, networking and filesystem persistence remain real.",
-  "finished": "2026-10-12T11:36:45.605Z",
+  "finished": "2026-10-12T11:59:10.882Z",
   "error": ""
 }

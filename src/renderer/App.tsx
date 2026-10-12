@@ -37,6 +37,7 @@ import {
 import {
   newRequest,
   ZOOM_LEVELS,
+  DEFAULT_APP_ZOOM,
   uid,
   type ApiRequest,
   type Collection,
@@ -120,7 +121,7 @@ export default function App() {
       useStore.getState().change((state) => {
         const current = state.settings.zoomPercent;
         state.settings.zoomPercent = reset
-          ? 100
+          ? DEFAULT_APP_ZOOM
           : increase
             ? (ZOOM_LEVELS.find((level) => level > current) ?? ZOOM_LEVELS.at(-1)!)
             : ([...ZOOM_LEVELS].reverse().find((level) => level < current) ?? ZOOM_LEVELS[0]);

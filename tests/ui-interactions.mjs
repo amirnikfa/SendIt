@@ -139,6 +139,21 @@ async function closeApp() {
 try {
   await check('01 Create a collection and nested folders through real context menus', async () => {
     await launch();
+    expect((await snapshot()).settings.zoomPercent).toBe(125);
+    await expect
+      .poll(() =>
+        app.evaluate(({ BrowserWindow }) =>
+          BrowserWindow.getAllWindows()[0].webContents.getZoomFactor(),
+        ),
+      )
+      .toBeCloseTo(1.25);
+    // Existing drag/resize checks use a 100% coordinate baseline; zoom is exercised below.
+    await page.getByTestId('settings').click();
+    const initialSettings = page.getByRole('dialog', { name: 'Settings', exact: true });
+    await expect(initialSettings.getByLabel('App zoom', { exact: true })).toHaveValue('125');
+    await initialSettings.getByLabel('App zoom', { exact: true }).selectOption('100');
+    await initialSettings.getByRole('button', { name: 'Done', exact: true }).click();
+    await persisted((state) => state.settings.zoomPercent === 100);
     await page.getByTestId('new-collection').click();
     await nameDialog('Create collection', 'Collection name', 'Interaction collection');
     await menu('Interaction collection', 'Add folder');
@@ -422,10 +437,13 @@ try {
         app.evaluate(({ BrowserWindow }) =>
           BrowserWindow.getAllWindows()[0].webContents.getZoomFactor(),
         );
-      const baselineDpr = await page.evaluate(() => devicePixelRatio);
+      const baselineDpr = (await page.evaluate(() => devicePixelRatio)) / (await zoom());
       await page.getByTestId('settings').click();
       const dialog = page.getByRole('dialog', { name: 'Settings', exact: true });
       const control = dialog.getByLabel('App zoom', { exact: true });
+      await expect(
+        control.getByRole('option', { name: '125% (default, recommended)', exact: true }),
+      ).toHaveAttribute('value', '125');
       for (const level of [75, 150, 200, 125]) {
         await control.selectOption(String(level));
         await expect.poll(zoom).toBeCloseTo(level / 100);
@@ -445,7 +463,7 @@ try {
       await page.keyboard.press('Control+-');
       await expect.poll(zoom).toBeCloseTo(1.25);
       await page.keyboard.press('Control+0');
-      await expect.poll(zoom).toBeCloseTo(1);
+      await expect.poll(zoom).toBeCloseTo(1.25);
       const after = await snapshot();
       expect(after.tabs.find((tab) => tab.id === after.activeTabId)?.request.postScript).toBe(
         before,
@@ -462,7 +480,7 @@ try {
           }, invalid),
         ).toBe(true);
       }
-      await expect.poll(zoom).toBeCloseTo(1);
+      await expect.poll(zoom).toBeCloseTo(1.25);
       await page.getByTestId('settings').click();
       await dialog.getByLabel('App zoom', { exact: true }).selectOption('125');
       await expect.poll(zoom).toBeCloseTo(1.25);
@@ -509,7 +527,7 @@ try {
       const viewport = await page.evaluate(() => ({ width: innerWidth, height: innerHeight }));
       expect(close.x + close.width).toBeLessThanOrEqual(viewport.width);
       await page.keyboard.press('Control+0');
-      await expect(dialog.getByLabel('App zoom', { exact: true })).toHaveValue('100');
+      await expect(dialog.getByLabel('App zoom', { exact: true })).toHaveValue('125');
       await dialog.getByRole('button', { name: 'Done', exact: true }).click();
       await expect(page.getByTestId('send')).toBeVisible();
     },

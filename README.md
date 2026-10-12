@@ -10,7 +10,7 @@ A local Windows desktop workspace for building, sending, organizing and testing 
 
 Run **`dist/SendIt-Portable-Win-x64.exe`** on Windows 10/11 x64. No installation wizard, administrator privileges, Node.js, npm or Python are required. The launcher temporarily extracts its bundled Electron runtime. Keep the executable in a writable directory; persistent data lives in **`SendIt-data` beside the EXE**. First launch may take longer while the runtime is extracted.
 
-The executable is unsigned. The delivered release is **104,988,653 bytes**, verified by direct launch and restart on Windows 11 Pro x64 (10.0.26200). Windows 10 is targeted but not individually tested. SHA-256: `a6d8e31dec92fbe24a6b47c7fc92439bbcb334fc814f2fdf5d128c3c94c6305d`. Detailed evidence is in [TEST_REPORT.md](docs/TEST_REPORT.md) and `dist/RELEASE.json`.
+The executable is unsigned. The delivered release is **104,989,342 bytes**, verified by direct launch and restart on Windows 11 Pro x64 (10.0.26200). Windows 10 is targeted but not individually tested. SHA-256: `152eba5788460ad7811bbf504e3c92b4cb1a793f35c8aa0fc806538a3e39e7ac`. Detailed evidence is in [TEST_REPORT.md](docs/TEST_REPORT.md) and `dist/RELEASE.json`.
 
 The complete source archive is `dist/SendIt-Source.zip`. Extract it, then run the build commands below to recreate a release. The source archive intentionally excludes dependencies, generated program files, test workspace data and proprietary research imagery.
 
@@ -73,7 +73,7 @@ The development data directory is `<project>/SendIt-data`. Existing data folders
 
 ## Everyday workflows
 
-Open **Settings → General** to choose **Dark**, **Light** or **Pink**, and set **App zoom** from **75% to 200%**. Zoom enlarges text, buttons, panels and code editors together. Use **Ctrl + +** (or **Ctrl + =**) to zoom in, **Ctrl + −** to zoom out, and **Ctrl + 0** to return to 100%, including while editing code. Appearance settings save automatically and are restored at startup. Older workspaces default to 100% zoom.
+Open **Settings → General** to choose **Dark**, **Light** or **Pink**, and set **App zoom** from **75% to 200%**. Zoom enlarges text, buttons, panels and code editors together. Use **Ctrl + +** (or **Ctrl + =**) to zoom in, **Ctrl + −** to zoom out, and **Ctrl + 0** to return to the recommended default of 125%, including while editing code. Appearance settings save automatically and are restored at startup. New workspaces and older workspaces without a saved zoom default to 125%; existing saved zoom preferences are preserved.
 
 1. Double-click **SendIt-Portable-Win-x64.exe** in the `dist` folder. Click **New** or press **Ctrl+T**. Click **GET** or its arrow to select GET, POST, PUT, PATCH, DELETE, HEAD or OPTIONS; you can also type a custom method. Enter the URL and click **Send** (Ctrl+Enter).
 2. Edit Params, Authorization, Headers, Body, Scripts, Variables or Docs. The response pane provides body, headers, cookies and tests. Monaco supports Ctrl+F search and folding.

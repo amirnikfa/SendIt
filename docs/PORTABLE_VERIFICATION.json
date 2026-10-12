@@ -1,8 +1,8 @@
 {
   "artifact": "D:\\Projects\\postman\\source\\dist\\SendIt-Portable-Win-x64.exe",
-  "size": 104988653,
-  "sha256": "a6d8e31dec92fbe24a6b47c7fc92439bbcb334fc814f2fdf5d128c3c94c6305d",
-  "started": "2026-10-12T11:44:27.659Z",
+  "size": 104989342,
+  "sha256": "152eba5788460ad7811bbf504e3c92b4cb1a793f35c8aa0fc806538a3e39e7ac",
+  "started": "2026-10-12T12:05:03.684Z",
   "checks": [
     {
       "name": "Portable launcher starts directly with its bundled runtime",
@@ -50,9 +50,9 @@
     }
   ],
   "runtime": "Chrome/152.0.7977.130",
-  "dataDirectory": "D:\\Projects\\postman\\source\\.test-data\\portable-release-1791805467537\\SendIt-data",
+  "dataDirectory": "D:\\Projects\\postman\\source\\.test-data\\portable-release-1791806703564\\SendIt-data",
   "error": "",
   "windowsVersion": "10.0.26200",
   "architecture": "x64",
-  "finished": "2026-10-12T11:44:51.924Z"
+  "finished": "2026-10-12T12:05:28.535Z"
 }

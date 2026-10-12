@@ -263,9 +263,10 @@ export const newCollection = (name: string): Collection => ({
   postScript: '',
 });
 export const ZOOM_LEVELS = [75, 90, 100, 110, 125, 150, 175, 200] as const;
+export const DEFAULT_APP_ZOOM = 125;
 export const defaultSettings: Settings = {
   theme: 'dark',
-  zoomPercent: 100,
+  zoomPercent: DEFAULT_APP_ZOOM,
   timeoutMs: 30000,
   followRedirects: true,
   verifyTls: true,

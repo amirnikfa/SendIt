@@ -7,8 +7,8 @@ Date: 2026-10-12. Final results below refer to the delivered source and portable
 | Property   | Recorded value                                                                       |
 | ---------- | ------------------------------------------------------------------------------------ |
 | Artifact   | `dist/SendIt-Portable-Win-x64.exe`                                                   |
-| File size  | **104,988,653 bytes** (100.12 MiB)                                                   |
-| SHA-256    | `a6d8e31dec92fbe24a6b47c7fc92439bbcb334fc814f2fdf5d128c3c94c6305d`                   |
+| File size  | **104,989,342 bytes** (100.12 MiB)                                                   |
+| SHA-256    | `152eba5788460ad7811bbf504e3c92b4cb1a793f35c8aa0fc806538a3e39e7ac`                   |
 | Format     | electron-builder single Windows x64 portable launcher; no installation wizard        |
 | Signing    | **Unsigned**; independently checked with Get-AuthenticodeSignature                   |
 | Test host  | **Windows 11 Pro, 10.0.26200, x64**                                                  |
@@ -97,6 +97,10 @@ Replaced the browser datalist, which filtered the initial GET value and hid the 
 ## Not established by these checks
 
 Windows 10 runtime behavior, enterprise endpoint-security policy compatibility, publisher signing/SmartScreen reputation, a clean-VM installation matrix, all external OAuth providers, long-duration soak/load testing, high-DPI/multi-monitor edge cases, read-only-folder behavior under all ACL policies, every Postman import extension and independent security review. Implemented guardrails and explicit limitations are described in [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) and [SECURITY.md](SECURITY.md).
+
+## Default zoom update
+
+125% is the default and recommended zoom for new workspaces and older settings without a saved zoom. Existing saved choices remain intact. Ctrl+0 resets to 125%. The seven storage checks and twelve desktop interaction checks pass with the new behavior. The desktop suite verifies 125% on first launch, then explicitly selects 100% for its existing drag/resize coordinate checks before testing zoom levels, the recommended label, reset shortcuts and persistence.
 
 ## Reproduction
 

@@ -27,6 +27,7 @@ import {
 import {
   newCollection,
   ZOOM_LEVELS,
+  DEFAULT_APP_ZOOM,
   pair,
   uid,
   type ApiRequest,
@@ -643,7 +644,7 @@ function SettingsDialog({ close }: { close: () => void }) {
             >
               {ZOOM_LEVELS.map((level) => (
                 <option key={level} value={level}>
-                  {level}%{level === 100 ? ' (default)' : ''}
+                  {level}%{level === DEFAULT_APP_ZOOM ? ' (default, recommended)' : ''}
                 </option>
               ))}
             </select>

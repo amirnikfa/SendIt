@@ -230,7 +230,10 @@ try {
     )
     .toBe(1);
   await check('Packaged appearance controls apply pink theme and app zoom', async () => {
-    defaultDpr = await page.evaluate(() => devicePixelRatio);
+    expect((await page.evaluate(() => window.workbench.load())).state.settings.zoomPercent).toBe(
+      125,
+    );
+    defaultDpr = (await page.evaluate(() => devicePixelRatio)) / 1.25;
     await page.getByTestId('settings').click();
     const dialog = page.getByRole('dialog', { name: 'Settings', exact: true });
     await dialog.getByRole('button', { name: 'Pink', exact: true }).click();
@@ -263,10 +266,10 @@ try {
         125,
       );
       await page.keyboard.press('Control+0');
-      await expect.poll(() => page.evaluate(() => devicePixelRatio)).toBeCloseTo(defaultDpr);
+      await expect.poll(() => page.evaluate(() => devicePixelRatio)).toBeCloseTo(defaultDpr * 1.25);
       await page.getByTestId('settings').click();
       const dialog = page.getByRole('dialog', { name: 'Settings', exact: true });
-      await expect(dialog.getByLabel('App zoom', { exact: true })).toHaveValue('100');
+      await expect(dialog.getByLabel('App zoom', { exact: true })).toHaveValue('125');
       await dialog.getByRole('button', { name: 'Dark', exact: true }).click();
       await dialog.getByRole('button', { name: 'Done', exact: true }).click();
     },

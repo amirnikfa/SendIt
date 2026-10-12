@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { DEFAULT_APP_ZOOM } from './models';
 import { certificateHost } from './certificates';
 export const certificateFileSchema = z.object({
   name: z.string().min(1).max(255),
@@ -128,7 +129,7 @@ export const collectionSchema = z.object({
 export const environmentSchema = z.object({ id, name: text, variables: pairs });
 export const settingsSchema = z.object({
   theme: z.enum(['dark', 'light', 'pink']),
-  zoomPercent: z.number().int().min(75).max(200).default(100),
+  zoomPercent: z.number().int().min(75).max(200).default(DEFAULT_APP_ZOOM),
   timeoutMs: z.number().int().min(1).max(600000),
   followRedirects: z.boolean(),
   verifyTls: z.boolean(),

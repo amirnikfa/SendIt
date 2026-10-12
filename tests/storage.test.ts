@@ -73,7 +73,7 @@ describe('transactional persistent state', () => {
     const { zoomPercent: _zoom, tls: _tls, ...legacySettings } = legacyState.settings;
     store.setMeta('state', { ...legacyState, settings: legacySettings });
     const state = store.load();
-    expect(state.settings.zoomPercent).toBe(100);
+    expect(state.settings.zoomPercent).toBe(125);
     expect(state.settings.tls).toEqual({
       caEnabled: false,
       caCertificates: [],
