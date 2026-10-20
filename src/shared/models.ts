@@ -49,6 +49,7 @@ export interface ApiRequest {
   postScript: string;
   collectionId?: string;
   folderId?: string;
+  verifyTls?: boolean;
 }
 export interface Folder {
   id: string;

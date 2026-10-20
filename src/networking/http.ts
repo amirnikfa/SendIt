@@ -251,6 +251,7 @@ export class HttpEngine {
     body: Buffer,
     settings: Settings,
     signal: AbortSignal,
+    requestVerifyTls?: boolean,
   ): Promise<WireResponse> {
     const limit = Math.min(50, Math.max(1, Number(settings.maxResponseMb) || 50)) * 1024 * 1024;
     const proxy = settings.proxyUrl.trim();
@@ -261,8 +262,8 @@ export class HttpEngine {
     }
     const agent = proxy
       ? url.protocol === 'https:'
-        ? new HttpsProxyAgent(proxy, certificateTrust(settings))
-        : new HttpProxyAgent(proxy, certificateTrust(settings))
+        ? new HttpsProxyAgent(proxy, certificateTrust(settings, requestVerifyTls))
+        : new HttpProxyAgent(proxy, certificateTrust(settings, requestVerifyTls))
       : undefined;
     const cookie = await this.jar.getCookieString(url.href);
     if (cookie && !getHeader(headers, 'cookie')) headers = [...headers, ['Cookie', cookie]];
@@ -287,7 +288,7 @@ export class HttpEngine {
           method,
           headers: outgoing,
           agent,
-          ...certificateOptions(url, settings),
+          ...certificateOptions(url, settings, requestVerifyTls),
           signal,
         },
         (response) => {
@@ -621,7 +622,15 @@ export class HttpEngine {
         const wireHeaders = getHeader(headers, 'host')
           ? headers
           : [...headers, ['Host', url.host] as [string, string]];
-        wire = await this.send(url, method, wireHeaders, bytes, input.settings, controller.signal);
+        wire = await this.send(
+          url,
+          method,
+          wireHeaders,
+          bytes,
+          input.settings,
+          controller.signal,
+          request.verifyTls,
+        );
         if (
           wire.status === 401 &&
           auth.type === 'digest' &&

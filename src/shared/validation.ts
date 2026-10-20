@@ -28,7 +28,7 @@ export const clientCertificateSchema = z
           return z.NEVER;
         }
       }),
-    port: z.number().int().min(1).max(65535),
+    port: z.number().int().min(1).max(65535).default(443),
     format: z.enum(['pem', 'pfx']),
     certificate: certificateFileSchema.optional(),
     privateKey: certificateFileSchema.optional(),
@@ -105,6 +105,7 @@ export const requestSchema = z.object({
   postScript: text,
   collectionId: id.optional(),
   folderId: id.optional(),
+  verifyTls: z.boolean().optional(),
 });
 const folderSchema = z.object({
   id,

@@ -16,8 +16,10 @@ export function CertificateSettings() {
   const [draft, setDraft] = useState<ClientCertificate | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+
   const updateDraft = (patch: Partial<ClientCertificate>) =>
     setDraft((value) => value && { ...value, ...patch });
+
   const pick = async (kind: CertificateFileKind) => {
     setBusy(true);
     setError('');
@@ -33,21 +35,37 @@ export function CertificateSettings() {
           state.settings.tls.caCertificates.push(file);
           state.settings.tls.caEnabled = true;
         });
-      } else updateDraft({ [kind]: file });
+      } else {
+        const isPfx =
+          file.name.toLowerCase().endsWith('.p12') || file.name.toLowerCase().endsWith('.pfx');
+        if (isPfx) {
+          updateDraft({ pfx: file, format: 'pfx' });
+        } else {
+          updateDraft({ [kind]: file });
+        }
+      }
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause));
     } finally {
       setBusy(false);
     }
   };
+
   const save = async () => {
     if (!draft) return;
     setError('');
     setBusy(true);
     try {
-      const certificate = { ...draft, host: certificateHost(draft.host) };
-      if (!Number.isInteger(certificate.port) || certificate.port < 1 || certificate.port > 65535)
+      const host = certificateHost(draft.host);
+      const port = draft.port && draft.port > 0 ? draft.port : 443;
+      if (!Number.isInteger(port) || port < 1 || port > 65535)
         throw new Error('Enter a port from 1 to 65535.');
+      const certificate: ClientCertificate = {
+        ...draft,
+        host,
+        port,
+        passphrase: draft.passphrase || '',
+      };
       if (
         tls.clientCertificates.some(
           (item) =>
@@ -63,7 +81,9 @@ export function CertificateSettings() {
         throw new Error('Choose both a client certificate and its private key.');
       if (certificate.format === 'pfx' && !certificate.pfx)
         throw new Error('Choose a PFX/P12 file.');
+
       await window.workbench.validateClientCertificate(certificate);
+
       store.change((state) => {
         const rows = state.settings.tls.clientCertificates;
         const at = rows.findIndex((item) => item.id === certificate.id);
@@ -78,6 +98,7 @@ export function CertificateSettings() {
       setBusy(false);
     }
   };
+
   const fileControl = (label: string, kind: CertificateFileKind, file?: CertificateFile) => (
     <div className="field">
       <span>{label}</span>
@@ -97,6 +118,7 @@ export function CertificateSettings() {
       </div>
     </div>
   );
+
   return (
     <div className="certificate-settings">
       <p className="help">
@@ -150,8 +172,9 @@ export function CertificateSettings() {
       <section aria-label="Client certificates">
         <h3>Client certificates (mTLS)</h3>
         <p className="help">
-          Each certificate is sent only to its exact hostname and port over TLS. Default HTTPS port:
-          443.
+          Client certificates are used to authenticate your identity to the server (Mutual TLS).
+          Supports domain names, IP addresses and wildcard domains (e.g. *.example.com). Default
+          HTTPS port: 443.
         </p>
         {tls.clientCertificates.map((certificate) => (
           <div className="certificate-row" key={certificate.id}>
@@ -208,6 +231,7 @@ export function CertificateSettings() {
         {!draft && (
           <button
             className="button secondary"
+            aria-label="Add client certificate"
             disabled={busy || tls.clientCertificates.length >= 20}
             onClick={() => {
               setDraft({
@@ -222,7 +246,7 @@ export function CertificateSettings() {
             }}
           >
             <Plus size={14} />
-            Add client certificate
+            Add Certificate
           </button>
         )}
         {draft && (
@@ -238,17 +262,37 @@ export function CertificateSettings() {
               <div className="two-fields">
                 <Field label="Hostname">
                   <input
+                    aria-label="Hostname"
                     value={draft.host}
-                    placeholder="api.example.com"
-                    onChange={(event) => updateDraft({ host: event.target.value })}
+                    placeholder="api.example.com, *.example.com, or *"
+                    onChange={(event) => {
+                      const val = event.target.value;
+                      if (/^https?:\/\//i.test(val)) {
+                        try {
+                          const u = new URL(val);
+                          updateDraft({
+                            host: u.hostname,
+                            port: u.port ? Number(u.port) : draft.port || 443,
+                          });
+                          return;
+                        } catch {}
+                      }
+                      updateDraft({ host: val });
+                    }}
                     spellCheck={false}
                   />
+                  <p className="help" style={{ fontSize: 11, marginTop: 4 }}>
+                    Destination server host (e.g. api.example.com), comma-separated hosts, or * for
+                    all servers.
+                  </p>
                 </Field>
                 <Field label="Port">
                   <input
+                    aria-label="Port"
                     type="number"
                     min={1}
                     max={65535}
+                    placeholder="443"
                     value={draft.port || ''}
                     onChange={(event) => updateDraft({ port: Number(event.target.value) })}
                   />
@@ -284,11 +328,16 @@ export function CertificateSettings() {
               )}
               <Field label="Passphrase (optional)">
                 <input
+                  aria-label="Passphrase (optional)"
                   type="password"
+                  placeholder="Passphrase"
                   autoComplete="off"
                   value={draft.passphrase}
                   onChange={(event) => updateDraft({ passphrase: event.target.value })}
                 />
+                <p className="help" style={{ fontSize: 11, marginTop: 4 }}>
+                  Passphrase required to decrypt the private key or PFX keystore, if protected.
+                </p>
               </Field>
               <div className="inline-actions">
                 <button type="submit" className="button primary">

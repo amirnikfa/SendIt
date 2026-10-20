@@ -17,6 +17,7 @@ import {
   Send,
   Settings2,
   ShieldAlert,
+  ShieldOff,
   Square,
   Terminal,
   WandSparkles,
@@ -246,6 +247,31 @@ export function RequestEditor({
           <span className="request-type">HTTP</span>
         </div>
         <div className="inline-actions">
+          <button
+            type="button"
+            className={`button small ${request.verifyTls === false || !settings.verifyTls ? 'secondary' : 'subtle'}`}
+            title={
+              request.verifyTls === false || !settings.verifyTls
+                ? 'SSL certificate verification is disabled. Click to enable.'
+                : 'SSL certificate verification is enabled. Click to disable for this request.'
+            }
+            onClick={() => {
+              const current =
+                request.verifyTls !== undefined ? request.verifyTls : settings.verifyTls;
+              edit({ verifyTls: !current });
+              notify(
+                !current
+                  ? 'SSL verification enabled for request'
+                  : 'SSL verification disabled for request',
+              );
+            }}
+          >
+            <ShieldOff
+              size={13}
+              style={{ opacity: request.verifyTls === false || !settings.verifyTls ? 1 : 0.6 }}
+            />
+            SSL: {request.verifyTls === false || !settings.verifyTls ? 'Off' : 'On'}
+          </button>
           <button className="text-button" onClick={onCode} title="Generate code snippet">
             <Code2 size={14} />
             Code
@@ -615,6 +641,9 @@ export function ResponseViewer({
   const [section, setSection] = useState('Body');
   const [mode, setMode] = useState<'Pretty' | 'Raw' | 'Preview'>('Pretty');
   const notify = useStore((s) => s.notify);
+  const change = useStore((s) => s.change);
+  const execute = useStore((s) => s.execute);
+  const editRequest = useStore((s) => s.editRequest);
   const isJson = response?.contentType.includes('json') || /^[\s]*[\[{]/.test(response?.body || '');
   const isImage = response?.contentType.startsWith('image/');
   const formatted = useMemo(() => {
@@ -718,6 +747,33 @@ export function ResponseViewer({
             <h3>Could not complete the request</h3>
             <pre data-testid="response-error">{response.error}</pre>
             <p>Check the URL, connection, and request settings, then try again.</p>
+            {Boolean(response.error) &&
+              /UNABLE_TO_VERIFY_LEAF_SIGNATURE|unable to verify the first certificate|SELF_SIGNED_CERT|self.signed certificate|CERT_HAS_EXPIRED|DEPTH_ZERO_SELF_SIGNED_CERT|ERR_TLS_CERT_ALTNAME_INVALID|CERT_SIGNATURE_FAILURE/i.test(
+                response.error,
+              ) && (
+                <div style={{ marginTop: 14 }}>
+                  <button
+                    type="button"
+                    className="button secondary"
+                    data-testid="disable-ssl-btn"
+                    onClick={() => {
+                      editRequest({ verifyTls: false });
+                      change((d) => {
+                        d.settings.verifyTls = false;
+                      });
+                      notify('SSL certificate verification disabled. Retrying request...');
+                      void execute();
+                    }}
+                  >
+                    <ShieldOff size={14} />
+                    Disable SSL verification &amp; Retry
+                  </button>
+                  <p style={{ marginTop: 8, fontSize: 11, color: 'var(--muted)' }}>
+                    Tip: You can also install the root CA into the Windows Certificate Store or add
+                    it under Settings &gt; Certificates.
+                  </p>
+                </div>
+              )}
           </div>
         </div>
       ) : section === 'Body' ? (

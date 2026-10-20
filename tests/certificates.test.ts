@@ -10,10 +10,12 @@ import { LiveEngine } from '../src/networking/live';
 import {
   certificateOptions,
   certificateTrust,
+  defaultCACertificates,
   prepareCertificateFile,
+  systemCACertificates,
   validateClientCertificate,
 } from '../src/networking/certificates';
-import { certificateHost } from '../src/shared/certificates';
+import { certificateHost, matchesCertificateHost } from '../src/shared/certificates';
 import {
   defaultSettings,
   newRequest,
@@ -305,7 +307,53 @@ describe('custom CA and mutual TLS', () => {
       }),
     ).toThrow();
   });
-  it('migrates older settings, normalizes hostnames and rejects duplicates and ambiguous scopes', () => {
+  it('accepts and configures PFX/P12 files as client certificate without error', () => {
+    const prepared = prepareCertificateFile('pfx', pfx);
+    expect(prepared.name).toBe(pfx.name);
+    expect(() =>
+      validateClientCertificate({
+        ...configuration('pfx'),
+        pfx: prepared,
+        passphrase: 'wrong-passphrase',
+      }),
+    ).toThrow('incorrect passphrase');
+
+    expect(() =>
+      validateClientCertificate({
+        ...configuration('pfx'),
+        pfx: prepared,
+        passphrase: 'fixture-passphrase',
+      }),
+    ).not.toThrow();
+
+    // certificateOptions attaching options for matching requests without error
+    const testSettings = {
+      ...input().settings,
+      tls: {
+        caEnabled: false,
+        caCertificates: [],
+        clientCertificates: [
+          {
+            id: 'user-cert-1',
+            enabled: true,
+            host: 'example.com, test.example.com',
+            port: 443,
+            format: 'pfx' as const,
+            pfx: prepared,
+            passphrase: 'fixture-passphrase',
+          },
+        ],
+      },
+    };
+    const opts1 = certificateOptions(new URL('https://example.com/service'), testSettings);
+    expect(opts1.pfx).toBeDefined();
+    expect(opts1.passphrase).toBe('fixture-passphrase');
+
+    const opts2 = certificateOptions(new URL('https://test.example.com/api/test'), testSettings);
+    expect(opts2.pfx).toBeDefined();
+    expect(opts2.passphrase).toBe('fixture-passphrase');
+  });
+  it('migrates older settings, normalizes hostnames, supports wildcards and rejects duplicates and ambiguous scopes', () => {
     const { tls: _tls, ...old } = defaultSettings;
     expect(settingsSchema.parse(old).tls).toEqual({
       caEnabled: false,
@@ -314,18 +362,44 @@ describe('custom CA and mutual TLS', () => {
     });
     expect(certificateHost('EXAMPLE.com.')).toBe('example.com');
     expect(certificateHost('::1')).toBe('[::1]');
+    expect(certificateHost('*.example.com')).toBe('*.example.com');
+    expect(certificateHost('https://example.com:8443/path')).toBe('example.com');
+    expect(certificateHost('example.com:443')).toBe('example.com');
+    expect(matchesCertificateHost('*.example.com', 'api.example.com')).toBe(true);
+    expect(matchesCertificateHost('*.example.com', 'example.com')).toBe(false);
+
     for (const host of [
       'https://example.com',
       '*.example.com',
       'example.com:443',
       'example.com/path',
     ])
-      expect(() => clientCertificateSchema.parse({ ...configuration(), host })).toThrow();
+      expect(clientCertificateSchema.parse({ ...configuration(), host }).host).toMatch(
+        /example\.com/,
+      );
+
+    expect(() => clientCertificateSchema.parse({ ...configuration(), host: '' })).toThrow();
     const settings = input().settings;
     settings.tls.clientCertificates.push({ ...configuration(), id: 'duplicate' });
     expect(() => settingsSchema.parse(settings)).toThrow('Only one client certificate');
     expect(() =>
       clientCertificateSchema.parse({ ...configuration('pfx'), certificate: cert }),
     ).toThrow();
+  });
+  it('loads system root CAs by default and disables verification when verifyTls is false', () => {
+    const sys = systemCACertificates();
+    const def = defaultCACertificates();
+    expect(Array.isArray(sys)).toBe(true);
+    expect(Array.isArray(def)).toBe(true);
+
+    const normalTrust = certificateTrust(defaultSettings);
+    expect(normalTrust.rejectUnauthorized).toBe(true);
+    if (sys.length > 0) {
+      expect(Array.isArray(normalTrust.ca)).toBe(true);
+      expect((normalTrust.ca as any[]).length).toBeGreaterThanOrEqual(sys.length);
+    }
+
+    const disabledTrust = certificateTrust({ ...defaultSettings, verifyTls: false });
+    expect(disabledTrust.rejectUnauthorized).toBe(false);
   });
 });

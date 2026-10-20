@@ -348,13 +348,22 @@ function importCollection(source: JsonObject, warnings: string[]): Collection {
           typeof requestSource.header === 'string'
             ? parseHeaderLines(requestSource.header)
             : importPairs(requestSource.header, warnings, 'Headers');
+        const protocolProfile = object(
+          item.protocolProfileBehavior ?? requestSource.protocolProfileBehavior,
+        );
+        if (
+          protocolProfile.strictSSL === false ||
+          protocolProfile.disableCertificateVerification === true
+        ) {
+          request.verifyTls = false;
+        }
         request.collectionId = collection.id;
         request.folderId = parentId;
         Object.assign(request, importScripts(item.event, warnings));
         collection.requests.push(request);
         unknownFields(
           item,
-          ['id', 'name', 'description', 'variable', 'event', 'request'],
+          ['id', 'name', 'description', 'variable', 'event', 'request', 'protocolProfileBehavior'],
           warnings,
           'Request item',
         );

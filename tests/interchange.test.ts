@@ -205,6 +205,24 @@ describe('Postman collection interchange', () => {
     expect(importText(JSON.stringify(exported)).collections[0].variables[0].secret).toBe(true);
   });
 
+  it('imports protocolProfileBehavior strictSSL=false to disable TLS verification per request', () => {
+    const coll = {
+      info: { name: 'SSL Test', schema },
+      item: [
+        {
+          name: 'Login Request',
+          protocolProfileBehavior: { strictSSL: false },
+          request: {
+            method: 'POST',
+            url: 'https://api.example.test/auth/login',
+          },
+        },
+      ],
+    };
+    const result = importText(JSON.stringify(coll));
+    expect(result.collections[0].requests[0].verifyTls).toBe(false);
+  });
+
   it.each(['urlencoded', 'formdata', 'graphql', 'file'])(
     'imports %s bodies without filesystem access',
     (mode) => {
