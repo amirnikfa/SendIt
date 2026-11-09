@@ -7,7 +7,7 @@ import { createHash } from 'node:crypto';
 import { mkdtemp, readFile, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { HttpEngine } from '../src/networking/http';
+import { HttpEngine, sanitizeSetCookie, stripDomainAttribute } from '../src/networking/http';
 import { defaultSettings, newRequest, pair, type ExecutionInput } from '../src/shared/models';
 
 let server: Server;
@@ -350,6 +350,38 @@ describe('real desktop HTTP transport', () => {
     expect((await restored.cookies()).some((c) => c.key === 'session')).toBe(false);
     await restored.setCookie(base, 'manual=yes; Path=/');
     expect((await restored.cookies()).some((c) => c.key === 'manual')).toBe(true);
+  });
+  it('sanitizes and tolerates cookies with ports, quotes, IP domains and paths like Postman', async () => {
+    expect(sanitizeSetCookie('id=1; Domain="127.0.0.1:8080"; Path=/')).toBe(
+      'id=1; Domain=127.0.0.1; Path=/',
+    );
+    expect(sanitizeSetCookie('id=2; Domain=example.com:443; Secure')).toBe(
+      'id=2; Domain=example.com; Secure',
+    );
+    expect(stripDomainAttribute('id=3; Domain=mismatched.com; Path=/')).toBe('id=3; Path=/');
+
+    const engine = new HttpEngine();
+    // Manual cookie setting on IP address and port
+    await engine.setCookie(
+      'http://127.0.0.1:8080/login',
+      'token=abc; Domain=127.0.0.1:8080; Path=/',
+    );
+    expect((await engine.cookies()).some((c) => c.key === 'token' && c.value === 'abc')).toBe(true);
+
+    // Cookie with path scoping falls back to allPaths if path does not match
+    await engine.setCookie('http://127.0.0.1/auth/login', 'scoped=xyz; Path=/auth');
+    const result = await engine.execute(input('/api/unmatched'));
+    expect(result.response.error).toBeUndefined();
+    const sent = JSON.parse(result.response.body);
+    expect(sent.headers.cookie).toContain('scoped=xyz');
+
+    // Merging when request already has cookie header
+    const withHeader = input('/api/unmatched');
+    withHeader.request.headers = [pair('Cookie', 'existing=123')];
+    const result2 = await engine.execute(withHeader);
+    const sent2 = JSON.parse(result2.response.body);
+    expect(sent2.headers.cookie).toContain('existing=123');
+    expect(sent2.headers.cookie).toContain('scoped=xyz');
   });
   it('sends form encoded, multipart, binary and GraphQL request bodies', async () => {
     const file = join(temp, 'upload.txt');

@@ -59,6 +59,7 @@ export interface Folder {
   auth: Auth;
   preScript: string;
   postScript: string;
+  verifyTls?: boolean;
 }
 export interface Collection {
   id: string;
@@ -70,6 +71,7 @@ export interface Collection {
   requests: ApiRequest[];
   preScript: string;
   postScript: string;
+  verifyTls?: boolean;
 }
 export interface Environment {
   id: string;
@@ -114,11 +116,13 @@ export interface ClientCertificate {
   privateKey?: CertificateFile;
   pfx?: CertificateFile;
   passphrase: string;
+  verifyServerCertificate?: boolean;
 }
 export interface TlsSettings {
   caEnabled: boolean;
   caCertificates: CertificateFile[];
   clientCertificates: ClientCertificate[];
+  insecureOrigins?: string[];
 }
 export interface Settings {
   theme: 'dark' | 'light' | 'pink';

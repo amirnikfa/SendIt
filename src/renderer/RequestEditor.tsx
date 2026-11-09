@@ -35,6 +35,7 @@ import { CodeEditor } from './Editor';
 import { toMarkdown } from '../services/interchange';
 import { AuthEditor, Empty, Field, IconButton, PairTable, Toggle, copyText } from './components';
 import { useStore } from './store';
+import { tlsOrigin, verifyTlsForUrl } from '../shared/certificates';
 
 const httpMethods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'];
 export const methodClass = (method: string) =>
@@ -220,6 +221,19 @@ export function RequestEditor({
     (s) => s.data.workspaces.find((w) => w.id === s.data.activeWorkspaceId)?.history || [],
   );
   const body = request.body;
+  const ws = useStore((s) => s.data.workspaces.find((w) => w.id === s.data.activeWorkspaceId));
+  const collection = ws?.collections.find((c) => c.id === request.collectionId);
+  let inheritedVerifyTls: boolean | undefined = collection?.verifyTls;
+  let curFolder = collection?.folders.find((f) => f.id === request.folderId);
+  const seenF = new Set<string>();
+  while (curFolder && !seenF.has(curFolder.id)) {
+    seenF.add(curFolder.id);
+    if (curFolder.verifyTls !== undefined) inheritedVerifyTls = curFolder.verifyTls;
+    curFolder = collection?.folders.find((f) => f.id === curFolder!.parentId);
+  }
+  const effectiveRequestVerifyTls =
+    request.verifyTls !== undefined ? request.verifyTls : inheritedVerifyTls;
+  const verifyTls = verifyTlsForUrl(request.url, settings, effectiveRequestVerifyTls);
   const bodyPatch = (patch: Partial<ApiRequest['body']>) => edit({ body: { ...body, ...patch } });
   const queryChange = (params: Pair[]) => edit({ params, url: paramsUrl(request.url, params) });
   const urlChange = (url: string) => edit({ url, params: queryRows(url, request.params) });
@@ -249,15 +263,14 @@ export function RequestEditor({
         <div className="inline-actions">
           <button
             type="button"
-            className={`button small ${request.verifyTls === false || !settings.verifyTls ? 'secondary' : 'subtle'}`}
+            className={`button small ${!verifyTls ? 'secondary' : 'subtle'}`}
             title={
-              request.verifyTls === false || !settings.verifyTls
+              !verifyTls
                 ? 'SSL certificate verification is disabled. Click to enable.'
                 : 'SSL certificate verification is enabled. Click to disable for this request.'
             }
             onClick={() => {
-              const current =
-                request.verifyTls !== undefined ? request.verifyTls : settings.verifyTls;
+              const current = verifyTls;
               edit({ verifyTls: !current });
               notify(
                 !current
@@ -266,11 +279,8 @@ export function RequestEditor({
               );
             }}
           >
-            <ShieldOff
-              size={13}
-              style={{ opacity: request.verifyTls === false || !settings.verifyTls ? 1 : 0.6 }}
-            />
-            SSL: {request.verifyTls === false || !settings.verifyTls ? 'Off' : 'On'}
+            <ShieldOff size={13} style={{ opacity: !verifyTls ? 1 : 0.6 }} />
+            SSL: {verifyTls ? 'On' : 'Off'}
           </button>
           <button className="text-button" onClick={onCode} title="Generate code snippet">
             <Code2 size={14} />
@@ -644,6 +654,7 @@ export function ResponseViewer({
   const change = useStore((s) => s.change);
   const execute = useStore((s) => s.execute);
   const editRequest = useStore((s) => s.editRequest);
+  const failedOrigin = response?.url ? tlsOrigin(response.url) : undefined;
   const isJson = response?.contentType.includes('json') || /^[\s]*[\[{]/.test(response?.body || '');
   const isImage = response?.contentType.startsWith('image/');
   const formatted = useMemo(() => {
@@ -748,7 +759,7 @@ export function ResponseViewer({
             <pre data-testid="response-error">{response.error}</pre>
             <p>Check the URL, connection, and request settings, then try again.</p>
             {Boolean(response.error) &&
-              /UNABLE_TO_VERIFY_LEAF_SIGNATURE|unable to verify the first certificate|SELF_SIGNED_CERT|self.signed certificate|CERT_HAS_EXPIRED|DEPTH_ZERO_SELF_SIGNED_CERT|ERR_TLS_CERT_ALTNAME_INVALID|CERT_SIGNATURE_FAILURE/i.test(
+              /UNABLE_TO_VERIFY|UNABLE_TO_GET_ISSUER|unable to verify|SELF_SIGNED|self.signed|CERT_|ERR_TLS_|INVALID_CA|PATH_LENGTH_EXCEEDED|INVALID_PURPOSE|certificate|tls|error ca/i.test(
                 response.error,
               ) && (
                 <div style={{ marginTop: 14 }}>
@@ -758,19 +769,38 @@ export function ResponseViewer({
                     data-testid="disable-ssl-btn"
                     onClick={() => {
                       editRequest({ verifyTls: false });
-                      change((d) => {
-                        d.settings.verifyTls = false;
-                      });
-                      notify('SSL certificate verification disabled. Retrying request...');
+                      notify('SSL verification disabled for this request. Retrying...');
                       void execute();
                     }}
                   >
                     <ShieldOff size={14} />
-                    Disable SSL verification &amp; Retry
+                    Disable SSL for this request &amp; Retry
                   </button>
+                  {failedOrigin && (
+                    <button
+                      type="button"
+                      className="button secondary"
+                      data-testid="disable-host-ssl-btn"
+                      style={{ marginLeft: 8 }}
+                      onClick={() => {
+                        change((d) => {
+                          const origins = (d.settings.tls.insecureOrigins ||= []);
+                          if (!origins.includes(failedOrigin)) origins.push(failedOrigin);
+                        });
+                        editRequest({ verifyTls: undefined });
+                        notify(`SSL verification disabled for ${failedOrigin}. Retrying...`);
+                        void execute();
+                      }}
+                    >
+                      <ShieldOff size={14} />
+                      Disable SSL for {failedOrigin} &amp; Retry
+                    </button>
+                  )}
                   <p style={{ marginTop: 8, fontSize: 11, color: 'var(--muted)' }}>
-                    Tip: You can also install the root CA into the Windows Certificate Store or add
-                    it under Settings &gt; Certificates.
+                    A client P12 authenticates you; it may not contain the CA needed to verify the
+                    server. Add the server CA in Settings &gt; Certificates to keep verification on.
+                    A host exception skips server verification for all requests to that host and
+                    port. You can remove it in Settings &gt; Certificates.
                   </p>
                 </div>
               )}

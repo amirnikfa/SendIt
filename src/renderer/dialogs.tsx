@@ -294,7 +294,7 @@ function CollectionDialog({
             <CheckCircle2 size={13} />
             Saved locally
           </span>
-          <button className="button secondary" onClick={close}>
+          <button className="button secondary" onClick={() => { void flushSave().then(() => close()); }}>
             Done
           </button>
         </>
@@ -326,6 +326,12 @@ function CollectionDialog({
               placeholder="Describe this API and how to use it…"
             />
           </Field>
+          <Toggle
+            title="Verify SSL certificates"
+            description="Validate server SSL certificates and hostnames for requests that do not specify a per-request setting."
+            checked={entity.verifyTls ?? true}
+            onChange={(verifyTls) => update({ verifyTls })}
+          />
           {!folderId && (
             <div className="inline-actions">
               <button
@@ -415,7 +421,7 @@ function EnvironmentsDialog({ initialId, close }: { initialId?: string; close: (
             <LockKeyhole size={13} />
             Secret values are encrypted at rest for this Windows account.
           </span>
-          <button className="button secondary" onClick={close}>
+          <button className="button secondary" onClick={() => { void flushSave().then(() => close()); }}>
             Done
           </button>
         </>
@@ -592,7 +598,7 @@ function SettingsDialog({ close }: { close: () => void }) {
       footer={
         <>
           <span className="footer-note">Changes save automatically</span>
-          <button className="button secondary" onClick={close}>
+          <button className="button secondary" onClick={() => { void flushSave().then(() => close()); }}>
             Done
           </button>
         </>
@@ -658,6 +664,18 @@ function SettingsDialog({ close }: { close: () => void }) {
             checked={settings.sidebarCollapsed}
             onChange={(sidebarCollapsed) => update({ sidebarCollapsed })}
           />
+          <Toggle
+            title="Verify SSL certificates"
+            description="Validate server certificates and hostnames. Turn off to allow self-signed or internal CA server certificates."
+            checked={settings.verifyTls}
+            onChange={(verifyTls) => update({ verifyTls })}
+          />
+          {!settings.verifyTls && (
+            <p className="warning">
+              <Shield size={14} />
+              Certificate verification is disabled for requests.
+            </p>
+          )}
         </>
       )}
       {tab === 'Network' && (

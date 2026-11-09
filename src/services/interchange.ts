@@ -297,15 +297,46 @@ function importCollection(source: JsonObject, warnings: string[]): Collection {
   collection.auth = importAuth(source.auth, warnings, false);
   collection.variables = importPairs(source.variable, warnings, 'Collection variables');
   Object.assign(collection, importScripts(source.event, warnings));
-  unknownFields(source, ['info', 'item', 'auth', 'variable', 'event'], warnings, 'Collection');
+  unknownFields(
+    source,
+    ['info', 'item', 'auth', 'variable', 'event', 'protocolProfileBehavior'],
+    warnings,
+    'Collection',
+  );
+  const collectionProtocolProfile = object(source.protocolProfileBehavior);
+  if (source.protocolProfileBehavior !== undefined) {
+    unknownFields(
+      collectionProtocolProfile,
+      ['strictSSL', 'disableCertificateVerification'],
+      warnings,
+      'Collection protocolProfileBehavior',
+    );
+    if (
+      collectionProtocolProfile.strictSSL === false ||
+      collectionProtocolProfile.disableCertificateVerification === true
+    ) {
+      collection.verifyTls = false;
+    } else if (collectionProtocolProfile.strictSSL === true) {
+      collection.verifyTls = true;
+    }
+  }
   let itemCount = 0;
-  const visit = (items: unknown[], parentId?: string, depth = 0): void => {
+  const visit = (
+    items: unknown[],
+    parentId?: string,
+    depth = 0,
+    inheritedProfile: Record<string, unknown> = collectionProtocolProfile,
+  ): void => {
     if (depth > 40) throw new Error('A collection cannot contain more than 40 folder levels.');
     for (const entry of items) {
       if (++itemCount > 10_000)
         throw new Error('A collection cannot contain more than 10,000 requests and folders.');
       const item = object(entry);
       if (Array.isArray(item.item)) {
+        const folderProtocolProfile = {
+          ...inheritedProfile,
+          ...object(item.protocolProfileBehavior),
+        };
         const folder = {
           id: uid(),
           name: str(item.name, 'Untitled folder'),
@@ -313,15 +344,21 @@ function importCollection(source: JsonObject, warnings: string[]): Collection {
           parentId,
           auth: importAuth(item.auth, warnings),
           ...importScripts(item.event, warnings),
+          ...(folderProtocolProfile.strictSSL === false ||
+          folderProtocolProfile.disableCertificateVerification === true
+            ? { verifyTls: false }
+            : folderProtocolProfile.strictSSL === true
+              ? { verifyTls: true }
+              : {}),
         };
         collection.folders.push(folder);
         unknownFields(
           item,
-          ['id', 'name', 'description', 'item', 'auth', 'event'],
+          ['id', 'name', 'description', 'item', 'auth', 'event', 'protocolProfileBehavior'],
           warnings,
           'Folder',
         );
-        visit(item.item, folder.id, depth + 1);
+        visit(item.item, folder.id, depth + 1, folderProtocolProfile);
       } else {
         if (
           typeof item.request !== 'string' &&
@@ -348,14 +385,17 @@ function importCollection(source: JsonObject, warnings: string[]): Collection {
           typeof requestSource.header === 'string'
             ? parseHeaderLines(requestSource.header)
             : importPairs(requestSource.header, warnings, 'Headers');
-        const protocolProfile = object(
-          item.protocolProfileBehavior ?? requestSource.protocolProfileBehavior,
-        );
+        const protocolProfile = {
+          ...inheritedProfile,
+          ...object(item.protocolProfileBehavior ?? requestSource.protocolProfileBehavior),
+        };
         if (
           protocolProfile.strictSSL === false ||
           protocolProfile.disableCertificateVerification === true
         ) {
           request.verifyTls = false;
+        } else if (protocolProfile.strictSSL === true) {
+          request.verifyTls = true;
         }
         request.collectionId = collection.id;
         request.folderId = parentId;
@@ -541,6 +581,11 @@ export function exportCollection(collection: Collection): object {
           id: folder.id,
           name: folder.name,
           description: folder.description,
+          ...(folder.verifyTls === false
+            ? { protocolProfileBehavior: { strictSSL: false } }
+            : folder.verifyTls === true
+              ? { protocolProfileBehavior: { strictSSL: true } }
+              : {}),
           auth: exportAuth(folder.auth),
           event: exportScripts(folder),
           item: items(folder.id, depth + 1),
@@ -551,6 +596,11 @@ export function exportCollection(collection: Collection): object {
       .map((request) => ({
         id: request.id,
         name: request.name,
+        ...(request.verifyTls === false
+          ? { protocolProfileBehavior: { strictSSL: false } }
+          : request.verifyTls === true
+            ? { protocolProfileBehavior: { strictSSL: true } }
+            : {}),
         variable: exportPairs(request.variables),
         event: exportScripts(request),
         request: {
@@ -585,6 +635,11 @@ export function exportCollection(collection: Collection): object {
       description: collection.description,
       schema: SCHEMA,
     },
+    ...(collection.verifyTls === false
+      ? { protocolProfileBehavior: { strictSSL: false } }
+      : collection.verifyTls === true
+        ? { protocolProfileBehavior: { strictSSL: true } }
+        : {}),
     auth: exportAuth(collection.auth),
     variable: exportPairs(collection.variables),
     event: exportScripts(collection),

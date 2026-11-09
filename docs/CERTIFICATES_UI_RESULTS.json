@@ -1,5 +1,5 @@
 {
-  "started": "2026-10-12T11:34:05.612Z",
+  "started": "2026-11-09T06:05:16.816Z",
   "checks": [
     {
       "name": "01 Default TLS verification rejects the private test CA",
@@ -28,10 +28,14 @@
     {
       "name": "07 Explicit backup includes certificate credentials and restores deleted TLS settings",
       "result": "passed"
+    },
+    {
+      "name": "08 Host SSL exception retries with the login cookie, survives restart, and can be removed",
+      "result": "passed"
     }
   ],
   "rendererErrors": [],
   "error": "",
-  "finished": "2026-10-12T11:34:11.719Z",
+  "finished": "2026-11-09T06:05:40.266Z",
   "nativeDialogs": "Native file selectors use real test certificate files; requests, TLS handshakes, persistence and Windows DPAPI are real."
 }

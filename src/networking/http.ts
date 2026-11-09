@@ -129,15 +129,62 @@ function digestHeader(
   return `Digest ${parts.join(', ')}`;
 }
 
+export function sanitizeSetCookie(cookie: string): string {
+  // Strip surrounding quotes and port from Domain attribute, e.g. Domain="example.com:8443" or Domain=10.0.0.1:443
+  return cookie.replace(
+    /(^|;\s*)(Domain\s*=\s*)(?:"([^":;]+)(?::\d+)?"|([^":;\s]+)(?::\d+)?)/gi,
+    (_match, prefix, domainKey, quotedDomain, unquotedDomain) => {
+      const domain = quotedDomain || unquotedDomain || '';
+      return `${prefix}${domainKey}${domain}`;
+    },
+  );
+}
+
+export function stripDomainAttribute(cookie: string): string {
+  return cookie
+    .split(';')
+    .filter((part) => !/^\s*Domain\s*=/i.test(part))
+    .join(';');
+}
+
+export function configureJar(jar: CookieJar): CookieJar {
+  const mutable = jar as unknown as {
+    rejectPublicSuffixes: boolean;
+    enableLooseMode: boolean;
+    allowSpecialUseDomain: boolean;
+    allowSecureOnLocal: boolean;
+  };
+  mutable.rejectPublicSuffixes = false;
+  mutable.enableLooseMode = true;
+  mutable.allowSpecialUseDomain = true;
+  mutable.allowSecureOnLocal = true;
+  return jar;
+}
+
+export function createJar(): CookieJar {
+  return configureJar(
+    new CookieJar(undefined, {
+      rejectPublicSuffixes: false,
+      looseMode: true,
+      allowSpecialUseDomain: true,
+      allowSecureOnLocal: true,
+    }),
+  );
+}
+
 export class HttpEngine {
-  private jar = new CookieJar();
+  private jar = createJar();
   constructor(private readonly authorizeFile: (path: string) => boolean = () => false) {}
 
   serializeCookies(): string {
     return JSON.stringify(this.jar.serializeSync());
   }
   loadCookies(serialized: string): void {
-    this.jar = CookieJar.deserializeSync(serialized);
+    try {
+      this.jar = configureJar(CookieJar.deserializeSync(serialized));
+    } catch {
+      this.jar = createJar();
+    }
   }
   async cookies(): Promise<CookieRecord[]> {
     const data = await this.jar.serialize();
@@ -152,10 +199,24 @@ export class HttpEngine {
     }));
   }
   async setCookie(url: string, cookie: string): Promise<void> {
-    await this.jar.setCookie(cookie, validateUrl(url).href);
+    await this.addResponseCookie(cookie, validateUrl(url).href);
   }
   async deleteCookie(domain: string, path: string, key: string): Promise<void> {
     await this.jar.store.removeCookie(domain, path, key);
+  }
+
+  private async addResponseCookie(cookie: string, url: string): Promise<void> {
+    const sanitized = sanitizeSetCookie(cookie);
+    try {
+      await this.jar.setCookie(sanitized, url, { loose: true });
+    } catch {
+      try {
+        const hostOnly = stripDomainAttribute(sanitized);
+        await this.jar.setCookie(hostOnly, url, { loose: true, ignoreError: true });
+      } catch {
+        /* Invalid server cookies are ignored per cookie policy. */
+      }
+    }
   }
 
   private async file(path: string | undefined): Promise<Buffer> {
@@ -265,8 +326,27 @@ export class HttpEngine {
         ? new HttpsProxyAgent(proxy, certificateTrust(settings, requestVerifyTls))
         : new HttpProxyAgent(proxy, certificateTrust(settings, requestVerifyTls))
       : undefined;
-    const cookie = await this.jar.getCookieString(url.href);
-    if (cookie && !getHeader(headers, 'cookie')) headers = [...headers, ['Cookie', cookie]];
+    const jarCookie = await this.jar.getCookieString(url.href, { allPaths: true });
+    if (jarCookie) {
+      const existing = getHeader(headers, 'cookie');
+      if (existing !== undefined && existing.trim()) {
+        const existingKeys = new Set(
+          existing
+            .split(';')
+            .map((part) => part.trim().split('=')[0].trim().toLowerCase())
+            .filter(Boolean),
+        );
+        const jarParts = jarCookie
+          .split(';')
+          .map((part) => part.trim())
+          .filter((part) => !existingKeys.has(part.split('=')[0].trim().toLowerCase()));
+        if (jarParts.length) {
+          headers = setHeader(headers, 'Cookie', `${existing.trim()}; ${jarParts.join('; ')}`);
+        }
+      } else {
+        headers = setHeader(headers, 'Cookie', jarCookie);
+      }
+    }
     // Object values containing arrays retain duplicate wire headers and remain compatible
     // with proxy agents, which inspect ClientRequest.getHeader() before connecting.
     const outgoing: http.OutgoingHttpHeaders = Object.create(null);
@@ -297,12 +377,13 @@ export class HttpEngine {
             rows.push(row(response.rawHeaders[i], response.rawHeaders[i + 1]));
           this.collect(response, limit, method)
             .then(async (bytes) => {
-              for (const cookie of response.headers['set-cookie'] || []) {
-                try {
-                  await this.jar.setCookie(cookie, url.href);
-                } catch {
-                  /* Invalid server cookies are ignored per cookie policy. */
-                }
+              const setCookies = response.headers['set-cookie']
+                ? Array.isArray(response.headers['set-cookie'])
+                  ? response.headers['set-cookie']
+                  : [response.headers['set-cookie']]
+                : [];
+              for (const cookie of setCookies) {
+                await this.addResponseCookie(cookie, url.href);
               }
               resolve({
                 status: response.statusCode || 0,
@@ -618,6 +699,9 @@ export class HttpEngine {
       let wire: WireResponse;
       while (true) {
         if (controller.signal.aborted) throw new Error('Request cancelled.');
+        // Retain the actual failed destination for a host-scoped TLS retry,
+        // including URLs resolved from variables or reached by a redirect.
+        response.url = url.href;
         // Keep the current destination's Host when following redirects.
         const wireHeaders = getHeader(headers, 'host')
           ? headers

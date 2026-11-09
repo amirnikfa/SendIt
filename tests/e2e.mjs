@@ -7,9 +7,7 @@ import { resolve, join, dirname, basename } from 'node:path';
 import { WebSocketServer } from 'ws';
 
 const root = resolve(import.meta.dirname, '..');
-const executablePath = process.env.SENDIT_EXE
-  ? resolve(process.env.SENDIT_EXE)
-  : undefined;
+const executablePath = process.env.SENDIT_EXE ? resolve(process.env.SENDIT_EXE) : undefined;
 const mode = executablePath ? 'portable' : 'development';
 const runDirectory = join(root, '.test-data', `e2e-${mode}-${Date.now()}`);
 const screenshots = join(root, 'docs', 'screenshots');

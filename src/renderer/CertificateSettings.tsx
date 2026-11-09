@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { FileKey2, Plus, Upload } from 'lucide-react';
-import { certificateHost } from '../shared/certificates';
+import { certificateHost, tlsOrigin } from '../shared/certificates';
 import {
   uid,
   type CertificateFile,
@@ -14,6 +14,7 @@ export function CertificateSettings() {
   const store = useStore();
   const tls = store.data.settings.tls;
   const [draft, setDraft] = useState<ClientCertificate | null>(null);
+  const [originDraft, setOriginDraft] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
@@ -65,6 +66,9 @@ export function CertificateSettings() {
         host,
         port,
         passphrase: draft.passphrase || '',
+        ...(draft.verifyServerCertificate !== undefined
+          ? { verifyServerCertificate: draft.verifyServerCertificate }
+          : {}),
       };
       if (
         tls.clientCertificates.some(
@@ -97,6 +101,24 @@ export function CertificateSettings() {
     } finally {
       setBusy(false);
     }
+  };
+
+  const addOriginException = () => {
+    const raw = originDraft.trim();
+    if (!raw) return;
+    let origin = tlsOrigin(raw);
+    if (!origin) origin = tlsOrigin(`https://${raw}`);
+    if (!origin) {
+      setError('Enter a valid HTTPS host or URL, e.g. https://10.0.0.1 or 10.0.0.1');
+      return;
+    }
+    setError('');
+    store.change((state) => {
+      const list = (state.settings.tls.insecureOrigins ||= []);
+      if (!list.includes(origin)) list.push(origin);
+    });
+    setOriginDraft('');
+    store.notify(`SSL exception added for ${origin}`);
   };
 
   const fileControl = (label: string, kind: CertificateFileKind, file?: CertificateFile) => (
@@ -197,6 +219,11 @@ export function CertificateSettings() {
               </strong>
               <span className="certificate-filename">
                 {certificate.certificate?.name || certificate.pfx?.name}
+                {certificate.verifyServerCertificate === false && (
+                  <span style={{ marginLeft: 8, opacity: 0.7, fontSize: 11 }}>
+                    (Server SSL verification off)
+                  </span>
+                )}
               </span>
             </div>
             <button
@@ -339,6 +366,12 @@ export function CertificateSettings() {
                   Passphrase required to decrypt the private key or PFX keystore, if protected.
                 </p>
               </Field>
+              <Toggle
+                title="Verify server certificate"
+                description="Validate server SSL certificate and CA chain. Uncheck for self-signed or internal CA banking servers."
+                checked={draft.verifyServerCertificate ?? true}
+                onChange={(verifyServerCertificate) => updateDraft({ verifyServerCertificate })}
+              />
               <div className="inline-actions">
                 <button type="submit" className="button primary">
                   Save client certificate
@@ -363,6 +396,52 @@ export function CertificateSettings() {
           {error}
         </p>
       )}
+      <section aria-label="SSL verification exceptions">
+        <h3>SSL verification exceptions</h3>
+        <p className="help">
+          Server certificates are not verified for these hosts and ports. Remove an exception
+          after adding the server CA to restore verification.
+        </p>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+          <input
+            style={{ flex: 1 }}
+            placeholder="e.g. https://10.0.0.1 or api.internal.local"
+            value={originDraft}
+            onChange={(e) => setOriginDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                addOriginException();
+              }
+            }}
+          />
+          <button
+            type="button"
+            className="button secondary"
+            onClick={addOriginException}
+          >
+            <Plus size={14} /> Add exception
+          </button>
+        </div>
+        {tls.insecureOrigins?.map((origin) => (
+          <div className="certificate-row" key={origin}>
+            <span className="certificate-filename">{origin}</span>
+            <button
+              className="text-button danger-text"
+              aria-label={`Remove SSL exception for ${origin}`}
+              onClick={() =>
+                store.change((state) => {
+                  state.settings.tls.insecureOrigins = state.settings.tls.insecureOrigins?.filter(
+                    (value) => value !== origin,
+                  );
+                })
+              }
+            >
+              Remove exception
+            </button>
+          </div>
+        ))}
+      </section>
       <p className="help">
         Private keys, PFX/P12 files and passphrases are protected for your Windows account. Exported
         backups include these secrets in plaintext.

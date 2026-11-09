@@ -1,4 +1,5 @@
 import { X509Certificate } from 'node:crypto';
+import forge from 'node-forge';
 import { createSecureContext, getCACertificates, type ConnectionOptions } from 'node:tls';
 import type {
   CertificateFile,
@@ -6,7 +7,7 @@ import type {
   ClientCertificate,
   Settings,
 } from '../shared/models';
-import { certificateHost, matchesCertificateHost } from '../shared/certificates';
+import { certificateHost, matchesCertificateHost, verifyTlsForUrl } from '../shared/certificates';
 
 export const MAX_CERTIFICATE_BYTES = 256 * 1024;
 
@@ -29,17 +30,72 @@ function bytes(file: CertificateFile): Buffer {
   return data;
 }
 
-function pemCertificates(file: CertificateFile): string[] {
+/** Read PKCS#12 certificate bags, verifying the archive MAC when present. */
+export function extractP12Certificates(
+  p12Buf: Buffer,
+  candidatePassphrases: string[] = [''],
+): string[] {
+  if (!p12Buf.length || p12Buf.length > MAX_CERTIFICATE_BYTES) return [];
+  const passphrases: (string | undefined)[] = [...new Set(candidatePassphrases)];
+  if (!passphrases.length) passphrases.push('');
+  // PKCS#12 distinguishes an empty password from an absent password.
+  if (passphrases.includes('')) passphrases.push(undefined);
+  for (const passphrase of passphrases) {
+    try {
+      const archive = forge.pkcs12.pkcs12FromAsn1(
+        forge.asn1.fromDer(p12Buf.toString('binary')),
+        false,
+        passphrase,
+      );
+      const bags =
+        archive.getBags({ bagType: forge.pki.oids.certBag })[forge.pki.oids.certBag] || [];
+      const certificates = bags.map((bag) => {
+        // Forge retains ASN.1 for certificates with non-RSA public keys.
+        const encoded = bag.cert
+          ? forge.pki.certificateToPem(bag.cert)
+          : Buffer.from(forge.asn1.toDer(bag.asn1).getBytes(), 'binary');
+        return new X509Certificate(encoded).toString();
+      });
+      return [...new Set(certificates)];
+    } catch {
+      // Do not salvage certificates from damaged or incorrectly decrypted bags.
+    }
+  }
+  return [];
+}
+
+export function extractCertificates(
+  file: CertificateFile,
+  candidatePassphrases: string[] = [''],
+): string[] {
+  const data = bytes(file);
+  const text = data.toString('utf8');
+  if (/-----BEGIN CERTIFICATE-----/.test(text)) {
+    const blocks = text.match(/-----BEGIN CERTIFICATE-----[\s\S]*?-----END CERTIFICATE-----/g);
+    if (blocks && blocks.length) {
+      return blocks.map((value) => new X509Certificate(value).toString());
+    }
+  }
+  if (isPkcs12(data)) {
+    return extractP12Certificates(data, candidatePassphrases);
+  }
+  try {
+    return [new X509Certificate(data).toString()];
+  } catch {
+    return [];
+  }
+}
+
+function pemCertificates(file: CertificateFile, candidatePassphrases: string[] = []): string[] {
   const data = bytes(file);
   const text = data.toString('utf8');
   if (/-----BEGIN [^-]*PRIVATE KEY-----/.test(text))
     throw new Error('This file contains a private key. Select a certificate-only file.');
-  try {
-    const blocks = text.match(/-----BEGIN CERTIFICATE-----[\s\S]*?-----END CERTIFICATE-----/g);
-    return (blocks || [data]).map((value) => new X509Certificate(value).toString());
-  } catch {
+  const certs = extractCertificates(file, candidatePassphrases);
+  if (!certs.length) {
     throw new Error('Select a valid PEM or DER certificate file.');
   }
+  return certs;
 }
 
 export function prepareCertificateFile(
@@ -53,17 +109,101 @@ export function prepareCertificateFile(
     }
     return file;
   }
-  if (kind === 'ca' || kind === 'certificate')
+  if (kind === 'ca') {
+    if (isPkcs12(data)) {
+      const extracted = extractCertificates(file, ['']);
+      if (extracted.length) {
+        return { ...file, data: Buffer.from(extracted.join('\n')).toString('base64') };
+      }
+      return file;
+    }
+    return { ...file, data: Buffer.from(pemCertificates(file).join('\n')).toString('base64') };
+  }
+  if (kind === 'certificate')
     return { ...file, data: Buffer.from(pemCertificates(file).join('\n')).toString('base64') };
   if (kind === 'privateKey' && !/-----BEGIN [^-]*PRIVATE KEY-----/.test(data.toString('utf8')))
     throw new Error('Select a PEM private key file.');
   return file;
 }
 
-function clientOptions(client: ClientCertificate): ConnectionOptions {
+export interface P12Identity {
+  cert: string;
+  key?: string;
+  ca: string[];
+}
+
+/**
+ * Extract client certificate, private key, and bundled CA chain from PKCS#12 archives.
+ * Uses node-forge to decrypt legacy ciphers (RC2-40, 3DES, AES) that OpenSSL 3 rejects natively.
+ */
+export function extractP12Identity(
+  p12Buf: Buffer,
+  candidatePassphrase = '',
+): P12Identity | undefined {
+  if (!p12Buf.length || p12Buf.length > MAX_CERTIFICATE_BYTES) return;
+  const passphrases: (string | undefined)[] = [candidatePassphrase];
+  if (candidatePassphrase !== '') passphrases.push('');
+  passphrases.push(undefined);
+  for (const passphrase of passphrases) {
+    try {
+      const asn1 = forge.asn1.fromDer(p12Buf.toString('binary'));
+      const p12 = forge.pkcs12.pkcs12FromAsn1(asn1, false, passphrase);
+      let cert = '';
+      let key = '';
+      const ca: string[] = [];
+
+      for (const sc of p12.safeContents) {
+        for (const sb of sc.safeBags) {
+          if (sb.cert) {
+            const pem = sb.cert
+              ? forge.pki.certificateToPem(sb.cert)
+              : Buffer.from(forge.asn1.toDer(sb.asn1).getBytes(), 'binary').toString('utf8');
+            if (!cert) {
+              cert = pem;
+            } else {
+              ca.push(pem);
+            }
+          }
+          if (sb.key) {
+            key = forge.pki.privateKeyToPem(sb.key);
+          }
+        }
+      }
+      if (cert) {
+        return { cert, key: key || undefined, ca };
+      }
+    } catch {
+      // Try next candidate passphrase
+    }
+  }
+  return undefined;
+}
+
+export function clientOptions(client: ClientCertificate): ConnectionOptions {
   if (client.format === 'pfx') {
     if (!client.pfx) throw new Error('Select a PFX/P12 file.');
-    return { pfx: bytes(client.pfx), passphrase: client.passphrase || undefined };
+    const pfxBuf = bytes(client.pfx);
+    const opts: ConnectionOptions = { pfx: pfxBuf, passphrase: client.passphrase || undefined };
+    // Modern PFX files are handled natively by Node.js.
+    // Legacy PKCS#12 ciphers (e.g. RC2-40 in enterprise banking certs) fail in OpenSSL 3
+    // with ERR_CRYPTO_UNSUPPORTED_OPERATION ('Unsupported PKCS12 PFX data').
+    // When that occurs, we seamlessly extract PEM credentials using forge.
+    try {
+      createSecureContext(opts);
+      return opts;
+    } catch (err: any) {
+      if (String(err?.message || '').includes('Unsupported PKCS12 PFX data')) {
+        const identity = extractP12Identity(pfxBuf, client.passphrase || '');
+        if (identity?.cert && identity?.key) {
+          return {
+            cert: identity.cert,
+            key: identity.key,
+            passphrase: client.passphrase || undefined,
+          };
+        }
+      }
+      return opts;
+    }
   }
   if (!client.certificate || !client.privateKey)
     throw new Error('Select a certificate and private key.');
@@ -138,17 +278,40 @@ export function defaultCACertificates(): string[] {
 export function certificateTrust(
   settings: Settings,
   requestVerifyTls?: boolean,
+  candidatePassphrases: string[] = [],
 ): ConnectionOptions {
   const rejectUnauthorized =
     requestVerifyTls !== undefined ? requestVerifyTls : settings.verifyTls !== false;
   const options: ConnectionOptions = { rejectUnauthorized };
-  const custom: string[] =
-    settings.tls?.caEnabled && settings.tls.caCertificates.length
-      ? settings.tls.caCertificates.flatMap(pemCertificates)
-      : [];
+  if (!rejectUnauthorized) {
+    return options;
+  }
+  const passphrases = [
+    '',
+    ...candidatePassphrases,
+    ...(settings.tls?.clientCertificates || [])
+      .map((item) => item.passphrase || '')
+      .filter(Boolean),
+  ];
+  const custom: string[] = [];
+  if (settings.tls?.caEnabled && settings.tls.caCertificates?.length) {
+    for (const file of settings.tls.caCertificates) {
+      try {
+        const certs = extractCertificates(file, passphrases);
+        for (const cert of certs) {
+          if (!custom.includes(cert)) custom.push(cert);
+        }
+      } catch {
+        // Fall back gracefully for individual malformed CA files
+      }
+    }
+  }
   const system = systemCACertificates();
   if (custom.length || system.length) {
     options.ca = [...defaultCACertificates(), ...system, ...custom];
+  }
+  if (custom.some((pem) => new X509Certificate(pem).ca)) {
+    options.allowPartialTrustChain = true;
   }
   return options;
 }
@@ -159,7 +322,6 @@ export function certificateOptions(
   requestVerifyTls?: boolean,
 ): ConnectionOptions {
   if (!['https:', 'wss:'].includes(url.protocol)) return {};
-  const options = certificateTrust(settings, requestVerifyTls);
   const host = certificateHost(url.hostname);
   const port = Number(url.port || 443);
   const client = settings.tls?.clientCertificates.find((item) => {
@@ -168,9 +330,46 @@ export function certificateOptions(
     if (certPort !== port && certPort !== 0) return false;
     return matchesCertificateHost(item.host, host);
   });
+  const passphrases: string[] = [];
+  if (client?.passphrase) passphrases.push(client.passphrase);
+
+  const options = certificateTrust(
+    settings,
+    verifyTlsForUrl(url, settings, requestVerifyTls),
+    passphrases,
+  );
   if (client) {
     validateClientCertificate(client);
     Object.assign(options, clientOptions(client));
+
+    if (client.verifyServerCertificate === false && requestVerifyTls !== true) {
+      options.rejectUnauthorized = false;
+    }
+
+    if (client.format === 'pfx' && client.pfx && options.rejectUnauthorized !== false) {
+      try {
+        const pfxData = bytes(client.pfx);
+        // The identity's CA bags apply only to this host/port. Client leaf
+        // certificates must never become server trust anchors.
+        const chainCerts = extractP12Certificates(pfxData, [client.passphrase || '']).filter(
+          (pem) => new X509Certificate(pem).ca,
+        );
+        if (chainCerts.length) {
+          // Enterprise P12 files often omit the root. An explicitly imported
+          // issuing CA can anchor the chain while signatures, expiry and the
+          // server hostname are still verified by TLS.
+          options.allowPartialTrustChain = true;
+          const caList = Array.isArray(options.ca) ? options.ca : defaultCACertificates();
+          const existing = new Set(caList.map((c) => (typeof c === 'string' ? c.trim() : '')));
+          const additional = chainCerts.filter((c) => !existing.has(c.trim()));
+          if (additional.length) {
+            options.ca = [...caList, ...additional];
+          }
+        }
+      } catch {
+        // Fall back gracefully
+      }
+    }
   }
   return options;
 }

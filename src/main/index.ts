@@ -134,7 +134,9 @@ function registerIpc() {
               ? ['pfx', 'p12']
               : kind === 'privateKey'
                 ? ['key', 'pem']
-                : ['pem', 'crt', 'cer'],
+                : kind === 'ca'
+                  ? ['pem', 'crt', 'cer', 'p12', 'pfx']
+                  : ['pem', 'crt', 'cer'],
         },
       ],
     });

@@ -3,6 +3,7 @@ import https from 'node:https';
 import { DatabaseSync } from 'node:sqlite';
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
+import forge from 'node-forge';
 
 const root = resolve(import.meta.dirname, '..');
 const runDirectory = join(root, '.test-data', `certificates-ui-${Date.now()}`);
@@ -23,13 +24,19 @@ const key = await readFile(fixture('localhost-key.pem'));
 const server = https.createServer(
   { cert, key, ca: cert, requestCert: true, rejectUnauthorized: true },
   (req, res) => {
-    res.writeHead(200, { 'content-type': 'application/json' });
+    if (req.url === '/loginStatic')
+      res.setHeader('set-cookie', 'app-session=fixture; Path=/; Secure; HttpOnly');
+    const cookieReceived = (req.headers.cookie || '').includes('app-session=fixture');
+    res.writeHead(req.url.startsWith('/dependent-service') && !cookieReceived ? 401 : 200, {
+      'content-type': 'application/json',
+    });
     res.end(
       JSON.stringify(
         {
           client: req.socket.getPeerCertificate().subject.CN,
           authorized: req.socket.authorized,
           tls: true,
+          cookieReceived,
         },
         null,
         2,
@@ -262,6 +269,68 @@ try {
           state.settings.tls.caCertificates.length === 1,
       );
       await sendSuccess();
+    },
+  );
+  await check(
+    '08 Host SSL exception retries with the login cookie, survives restart, and can be removed',
+    async () => {
+      const clientOnly = join(runDirectory, 'client-only.p12');
+      const archive = forge.pkcs12.toPkcs12Asn1(
+        forge.pki.privateKeyFromPem(await readFile(fixture('client-key.pem'), 'utf8')),
+        [forge.pki.certificateFromPem(await readFile(fixture('client-cert.pem'), 'utf8'))],
+        'fixture-passphrase',
+      );
+      await writeFile(clientOnly, Buffer.from(forge.asn1.toDer(archive).getBytes(), 'binary'));
+      let dialog = await settings();
+      await dialog
+        .getByRole('button', { name: `Edit client certificate for 127.0.0.1:${port}`, exact: true })
+        .click();
+      await openFrom(clientOnly);
+      await dialog.getByRole('button', { name: 'Choose pfx/p12 file', exact: true }).click();
+      await dialog.getByRole('button', { name: 'Save client certificate', exact: true }).click();
+      await dialog
+        .getByRole('switch', { name: /Use custom CA certificates/ })
+        .uncheck();
+      await dialog.getByRole('button', { name: 'Done', exact: true }).click();
+      await page.getByTestId('url').fill(`https://127.0.0.1:${port}/loginStatic`);
+      await page.getByRole('button', { name: 'SSL: On', exact: true }).click();
+      await sendSuccess();
+
+      await page.keyboard.press('Control+t');
+      await page.getByTestId('url').fill(`https://127.0.0.1:${port}/dependent-service`);
+      await page.getByTestId('send').click();
+      await expect(page.getByTestId('response-error')).toBeVisible();
+      await page.getByTestId('disable-host-ssl-btn').click();
+      await expect(page.getByTestId('response-status')).toContainText('200 OK');
+      await expect(page.getByTestId('response-body')).toContainText('"cookieReceived": true');
+      await expect(page.getByRole('button', { name: 'SSL: Off', exact: true })).toBeVisible();
+      await persisted(
+        (state) =>
+          state.settings.verifyTls &&
+          state.settings.tls.insecureOrigins?.[0] === `https://127.0.0.1:${port}`,
+      );
+      await page.keyboard.press('Control+t');
+      await page.getByTestId('url').fill(`https://127.0.0.1:${port}/dependent-service-two`);
+      await sendSuccess();
+      await close();
+      await launch();
+      await sendSuccess();
+      await expect(page.getByTestId('response-body')).toContainText('"cookieReceived": true');
+      dialog = await settings();
+      await dialog
+        .getByRole('button', {
+          name: `Remove SSL exception for https://127.0.0.1:${port}`,
+          exact: true,
+        })
+        .click();
+      await dialog.getByRole('button', { name: 'Done', exact: true }).click();
+      await page.getByTestId('send').click();
+      await expect(page.getByTestId('response-error')).toBeVisible();
+      await page.getByTestId('disable-ssl-btn').click();
+      await expect(page.getByTestId('response-status')).toContainText('200 OK');
+      await persisted((state) => (state.settings.tls.insecureOrigins || []).length === 0);
+      expect((await snapshot()).settings.verifyTls).toBe(true);
+      expect((await snapshot()).settings.tls.insecureOrigins).toEqual([]);
     },
   );
   expect(report.rendererErrors).toEqual([]);

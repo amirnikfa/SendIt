@@ -63,8 +63,25 @@ function expect(value, label) {
 }
 const __globals = scope(__state.globals), __collection = scope(__state.collectionVariables), __environment = scope(__state.environment), __local = scope(__state.variables);
 const __combined = {...__local, get(key) { for (const s of [__local,__environment,__collection,__globals]) if (s.has(key)) return s.get(key); }, has(key) { return this.get(key) !== undefined; }, toObject() { return {...__globals.toObject(),...__collection.toObject(),...__environment.toObject(),...__local.toObject()}; }};
+function parseCookies(rows) {
+  const map = new Map();
+  for (const str of (rows || [])) {
+    const first = String(str).split(';')[0].trim();
+    const idx = first.indexOf('=');
+    if (idx > 0) {
+      map.set(first.slice(0, idx).trim(), first.slice(idx + 1).trim());
+    }
+  }
+  return {
+    get(name) { return map.get(String(name)); },
+    has(name) { return map.has(String(name)); },
+    toObject() { return Object.fromEntries(map.entries()); },
+    all() { return Array.from(map.entries()).map(([name, value]) => ({ name, value })); }
+  };
+}
 const pm = {
   globals: __globals, environment: __environment, collectionVariables: __collection, variables: __combined,
+  cookies: parseCookies(__state.cookies || (__response ? __response.cookies : [])),
   expect,
   test(name, fn) { if (__tests.length >= 1000) throw new Error('Test limit (1000) exceeded'); try { const returned = fn(); if (returned && typeof returned.then === 'function') throw new Error('Async tests are unsupported; use a synchronous test callback.'); __tests.push({name:String(name),passed:true}); } catch(e) { __tests.push({name:String(name),passed:false,error:String(e.message || e)}); } }
 };
@@ -74,6 +91,7 @@ if (__response) {
     code: __response.status, status: __response.statusText, responseTime: __response.duration, responseSize: __response.size,
     text: () => __response.body, json: () => JSON.parse(__response.body),
     headers: {get: name => __response.headers.find(h => h.key.toLowerCase() === String(name).toLowerCase())?.value, has(name) { return this.get(name) !== undefined; }, toObject: () => Object.fromEntries(__response.headers.map(h => [h.key,h.value])), all: () => __response.headers.slice()},
+    cookies: parseCookies(__response.cookies),
     to: { have: { status(code) { expect(__response.status).to.equal(code); }, header(name, value) { const got = pm.response.headers.get(name); expect(got).to.exist; if (value !== undefined) expect(got).to.equal(value); } }, be: {} }
   };
   Object.defineProperty(pm.response.to.be,'ok',{get() { expect(__response.status).to.be.within(200,299); return true; }});
@@ -101,6 +119,7 @@ export async function runScript(
   try {
     const payload = JSON.stringify({
       ...original,
+      cookies: response ? response.cookies : undefined,
       response: response ? { ...response, base64: '', logs: [], tests: [] } : undefined,
     });
     if (payload.length > 5 * 1024 * 1024)

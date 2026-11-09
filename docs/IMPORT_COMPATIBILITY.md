@@ -6,18 +6,18 @@ Implemented in `src/services/interchange.ts`. Research and verification date: 20
 
 The importer accepts the common v2.0/v2.1 layout and exports v2.1. It creates new internal IDs so importing the same file cannot overwrite an existing collection. Requests remain editable.
 
-| Data | Behavior |
-| --- | --- |
-| Collections and nested folders | Names, descriptions, nested parents, authentication and scripts retained; maximum 40 folder levels |
-| Requests | Names, descriptions, methods, URL, headers, body, local variables and scripts retained |
-| URLs | String/raw and structured host/path/port forms; query rows and duplicates retained; disabled rows excluded from the active URL |
-| Path variables | `/:id` converted to `/{{id}}` with values stored as request variables |
-| Key/value rows | Descriptions, enabled state and secret metadata retained where represented |
-| Authentication | No Auth, parent inheritance, Basic, Bearer, API key, Digest and OAuth 2.0 token/client-credentials/refresh settings |
-| Bodies | Raw language, URL-encoded, multipart, binary mode and GraphQL query/variables |
-| Files | Every imported file reference cleared; select local files again before sending. Import never opens or reads paths in the imported content. |
-| Scripts | Enabled JavaScript prerequest/test events at collection, folder and request level; multiple events joined in source order |
-| Environment JSON | Names, values, enabled state and secret metadata; globals exports can be imported as environments with a warning |
+| Data                           | Behavior                                                                                                                                   |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Collections and nested folders | Names, descriptions, nested parents, authentication and scripts retained; maximum 40 folder levels                                         |
+| Requests                       | Names, descriptions, methods, URL, headers, body, local variables and scripts retained                                                     |
+| URLs                           | String/raw and structured host/path/port forms; query rows and duplicates retained; disabled rows excluded from the active URL             |
+| Path variables                 | `/:id` converted to `/{{id}}` with values stored as request variables                                                                      |
+| Key/value rows                 | Descriptions, enabled state and secret metadata retained where represented                                                                 |
+| Authentication                 | No Auth, parent inheritance, Basic, Bearer, API key, Digest and OAuth 2.0 token/client-credentials/refresh settings                        |
+| Bodies                         | Raw language, URL-encoded, multipart, binary mode and GraphQL query/variables                                                              |
+| Files                          | Every imported file reference cleared; select local files again before sending. Import never opens or reads paths in the imported content. |
+| Scripts                        | Enabled JavaScript prerequest/test events at collection, folder and request level; multiple events joined in source order                  |
+| Environment JSON               | Names, values, enabled state and secret metadata; globals exports can be imported as environments with a warning                           |
 
 Unsupported top-level, folder, item and request fields produce warnings. Examples include saved example responses, folder variables, request-specific proxies/certificates and protocol behavior overrides. External script URLs are not fetched. Disabled script events and bodies are omitted with warnings. Unsupported auth schemes become No Auth with a warning. Unsupported body modes cancel the import instead of dropping the body. OAuth authorization-code flows are not configured by import; existing access tokens are retained.
 

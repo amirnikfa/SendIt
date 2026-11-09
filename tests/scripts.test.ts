@@ -64,6 +64,35 @@ describe('bounded QuickJS script sandbox', () => {
       ).tests[0].passed,
     ).toBe(true);
   });
+  it('supports pm.cookies and pm.response.cookies access', async () => {
+    const mockResponse: any = {
+      status: 200,
+      statusText: 'OK',
+      duration: 10,
+      size: 50,
+      headers: [],
+      cookies: ['token=abc123xyz; Path=/; HttpOnly', 'flag=true'],
+      body: '{"ok":true}',
+      base64: '',
+      contentType: 'application/json',
+      url: 'https://example.com/api',
+      tests: [],
+      logs: [],
+    };
+    const result = await runScript(
+      `
+      pm.test("has token", () => pm.expect(pm.cookies.has("token")).to.be.true);
+      pm.test("get token", () => pm.expect(pm.cookies.get("token")).to.equal("abc123xyz"));
+      pm.test("response cookie has flag", () => pm.expect(pm.response.cookies.has("flag")).to.be.true);
+      pm.test("response cookie get flag", () => pm.expect(pm.response.cookies.get("flag")).to.equal("true"));
+      pm.test("toObject keys", () => pm.expect(Object.keys(pm.response.cookies.toObject())).to.deep.equal(["token", "flag"]));
+    `,
+      state(),
+      mockResponse,
+    );
+    expect(result.error).toBeUndefined();
+    expect(result.tests.map((t) => t.passed)).toEqual([true, true, true, true, true]);
+  });
 });
 
 describe('variable resolution', () => {

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { DEFAULT_APP_ZOOM } from './models';
-import { certificateHost } from './certificates';
+import { certificateHost, tlsOrigin } from './certificates';
 export const certificateFileSchema = z.object({
   name: z.string().min(1).max(255),
   data: z
@@ -34,6 +34,7 @@ export const clientCertificateSchema = z
     privateKey: certificateFileSchema.optional(),
     pfx: certificateFileSchema.optional(),
     passphrase: z.string().max(4096).default(''),
+    verifyServerCertificate: z.boolean().optional(),
   })
   .refine(
     (value) =>
@@ -47,6 +48,18 @@ export const tlsSettingsSchema = z
     caEnabled: z.boolean().default(false),
     caCertificates: z.array(certificateFileSchema).max(10).default([]),
     clientCertificates: z.array(clientCertificateSchema).max(20).default([]),
+    insecureOrigins: z
+      .array(
+        z
+          .string()
+          .max(2048)
+          .refine(
+            (value) => tlsOrigin(value) === value,
+            'SSL exceptions must be exact HTTPS origins without paths or wildcards.',
+          ),
+      )
+      .max(100)
+      .optional(),
   })
   .refine(
     (value) =>
@@ -115,6 +128,7 @@ const folderSchema = z.object({
   auth: authSchema,
   preScript: text,
   postScript: text,
+  verifyTls: z.boolean().optional(),
 });
 export const collectionSchema = z.object({
   id,
@@ -126,6 +140,7 @@ export const collectionSchema = z.object({
   requests: z.array(requestSchema).max(20000),
   preScript: text,
   postScript: text,
+  verifyTls: z.boolean().optional(),
 });
 export const environmentSchema = z.object({ id, name: text, variables: pairs });
 export const settingsSchema = z.object({

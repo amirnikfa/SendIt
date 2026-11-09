@@ -223,6 +223,36 @@ describe('Postman collection interchange', () => {
     expect(result.collections[0].requests[0].verifyTls).toBe(false);
   });
 
+  it('inherits protocolProfileBehavior strictSSL=false from collection and folder levels', () => {
+    const coll = {
+      info: { name: 'Inherited SSL Test', schema },
+      protocolProfileBehavior: { strictSSL: false },
+      item: [
+        {
+          name: 'Top level request',
+          request: 'https://api.example.test/item1',
+        },
+        {
+          name: 'Folder',
+          item: [
+            {
+              name: 'Nested request',
+              request: 'https://api.example.test/item2',
+            },
+          ],
+        },
+      ],
+    };
+    const result = importText(JSON.stringify(coll));
+    expect(result.collections[0].requests[0].verifyTls).toBe(false);
+    expect(result.collections[0].requests[1].verifyTls).toBe(false);
+
+    // Export preserves protocolProfileBehavior strictSSL: false
+    const exported = exportCollection(result.collections[0]) as any;
+    const topReq = exported.item.find((i: any) => i.name === 'Top level request');
+    expect(topReq.protocolProfileBehavior?.strictSSL).toBe(false);
+  });
+
   it.each(['urlencoded', 'formdata', 'graphql', 'file'])(
     'imports %s bodies without filesystem access',
     (mode) => {

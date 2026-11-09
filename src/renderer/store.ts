@@ -82,8 +82,16 @@ export function requestContext(
   }
   let inheritedAuth = collection?.auth;
   for (const f of ancestors) if (f.auth.type !== 'inherit') inheritedAuth = f.auth;
+  let inheritedVerifyTls: boolean | undefined = collection?.verifyTls;
+  for (const f of ancestors) {
+    if (f.verifyTls !== undefined) inheritedVerifyTls = f.verifyTls;
+  }
+  const effectiveRequest: ApiRequest = {
+    ...request,
+    verifyTls: request.verifyTls !== undefined ? request.verifyTls : inheritedVerifyTls,
+  };
   return {
-    request,
+    request: effectiveRequest,
     settings: data.settings,
     globals: ws.globals,
     environment: ws.environments.find((e) => e.id === ws.activeEnvironmentId)?.variables || [],
