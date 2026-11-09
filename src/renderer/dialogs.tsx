@@ -294,7 +294,12 @@ function CollectionDialog({
             <CheckCircle2 size={13} />
             Saved locally
           </span>
-          <button className="button secondary" onClick={() => { void flushSave().then(() => close()); }}>
+          <button
+            className="button secondary"
+            onClick={() => {
+              void flushSave().then(() => close());
+            }}
+          >
             Done
           </button>
         </>
@@ -340,13 +345,41 @@ function CollectionDialog({
                   void window.workbench
                     .exportCollection(collection)
                     .then((saved) => {
-                      if (saved) store.notify('Collection exported');
+                      if (saved) store.notify('Collection exported (Postman v2.1)');
                     })
                     .catch((e) => store.notify(String(e), 'error'))
                 }
               >
                 <Download size={14} />
                 Export v2.1 JSON
+              </button>
+              <button
+                className="button secondary"
+                onClick={() =>
+                  void window.workbench
+                    .exportOpenApi(collection, 'yaml')
+                    .then((saved) => {
+                      if (saved) store.notify('OpenAPI (YAML) exported');
+                    })
+                    .catch((e) => store.notify(String(e), 'error'))
+                }
+              >
+                <FileJson2 size={14} />
+                Export OpenAPI YAML
+              </button>
+              <button
+                className="button secondary"
+                onClick={() =>
+                  void window.workbench
+                    .exportOpenApi(collection, 'json')
+                    .then((saved) => {
+                      if (saved) store.notify('OpenAPI (JSON) exported');
+                    })
+                    .catch((e) => store.notify(String(e), 'error'))
+                }
+              >
+                <FileJson2 size={14} />
+                Export OpenAPI JSON
               </button>
               <button
                 className="button secondary"
@@ -421,7 +454,12 @@ function EnvironmentsDialog({ initialId, close }: { initialId?: string; close: (
             <LockKeyhole size={13} />
             Secret values are encrypted at rest for this Windows account.
           </span>
-          <button className="button secondary" onClick={() => { void flushSave().then(() => close()); }}>
+          <button
+            className="button secondary"
+            onClick={() => {
+              void flushSave().then(() => close());
+            }}
+          >
             Done
           </button>
         </>
@@ -598,7 +636,12 @@ function SettingsDialog({ close }: { close: () => void }) {
       footer={
         <>
           <span className="footer-note">Changes save automatically</span>
-          <button className="button secondary" onClick={() => { void flushSave().then(() => close()); }}>
+          <button
+            className="button secondary"
+            onClick={() => {
+              void flushSave().then(() => close());
+            }}
+          >
             Done
           </button>
         </>
@@ -862,7 +905,9 @@ function ImportDialog({ close }: { close: () => void }) {
       onClose={close}
       footer={
         <>
-          <span className="footer-note">Postman Collection v2.1 · Environments · cURL</span>
+          <span className="footer-note">
+            OpenAPI / Swagger (YAML &amp; JSON) · Postman v2.1 · Environments · cURL
+          </span>
           <button
             className="button primary"
             disabled={busy || !text.trim()}
@@ -888,7 +933,7 @@ function ImportDialog({ close }: { close: () => void }) {
           <Upload size={23} />
         </div>
         <strong>Choose a file to import</strong>
-        <span>Postman collections or environment JSON files</span>
+        <span>OpenAPI / Swagger (YAML/JSON), Postman collections, or environments</span>
       </button>
       <div className="or-divider">
         <span>or paste raw text</span>
@@ -897,7 +942,7 @@ function ImportDialog({ close }: { close: () => void }) {
         className="import-text mono"
         aria-label="Import text"
         placeholder={
-          "curl --request GET 'https://api.example.com/users'\n\nOr paste collection / environment JSON…"
+          "curl --request GET 'https://api.example.com/users'\n\nOr paste OpenAPI / Swagger (YAML/JSON), Postman collection, or environment…"
         }
         value={text}
         onChange={(e) => setText(e.target.value)}

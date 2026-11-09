@@ -13,6 +13,8 @@ const bridge: Bridge = {
   importFile: () => ipcRenderer.invoke('file:import'),
   importText: (text) => ipcRenderer.invoke('text:import', text),
   exportCollection: (collection) => ipcRenderer.invoke('collection:export', collection),
+  exportOpenApi: (collection, format) =>
+    ipcRenderer.invoke('collection:export-openapi', collection, format),
   exportEnvironment: (environment) => ipcRenderer.invoke('environment:export', environment),
   saveFile: (name, content, base64) => ipcRenderer.invoke('file:save', name, content, base64),
   backup: () => ipcRenderer.invoke('app:backup'),

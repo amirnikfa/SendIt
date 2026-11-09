@@ -11,6 +11,7 @@ import {
   type Pair,
   type RequestBody,
 } from '../shared/models';
+import { load as yamlLoad, dump as yamlDump } from 'js-yaml';
 
 type JsonObject = Record<string, unknown>;
 const MAX_IMPORT = 20 * 1024 * 1024;
@@ -431,11 +432,407 @@ function parseHeaderLines(text: string): Pair[] {
     });
 }
 
+export function isOpenApi(source: JsonObject): boolean {
+  if (typeof source.openapi === 'string' && source.openapi.startsWith('3.')) return true;
+  if (typeof source.swagger === 'string' && source.swagger.startsWith('2.')) return true;
+  if (
+    source.paths !== undefined &&
+    typeof source.paths === 'object' &&
+    source.info !== undefined &&
+    typeof source.info === 'object'
+  ) {
+    return true;
+  }
+  return false;
+}
+
+function resolveRef(ref: string, root: JsonObject): JsonObject {
+  if (!ref.startsWith('#/')) return {};
+  const parts = ref.slice(2).split('/');
+  let current: unknown = root;
+  for (const part of parts) {
+    if (!current || typeof current !== 'object') return {};
+    current = (current as Record<string, unknown>)[part.replace(/~1/g, '/').replace(/~0/g, '~')];
+  }
+  return object(current);
+}
+
+function generateSchemaExample(
+  schemaRaw: unknown,
+  root: JsonObject,
+  depth = 0,
+  visitedRefs = new Set<string>(),
+): unknown {
+  if (depth > 8 || !schemaRaw || typeof schemaRaw !== 'object') return '';
+  let schema = object(schemaRaw);
+  if (typeof schema.$ref === 'string') {
+    if (visitedRefs.has(schema.$ref)) return {};
+    visitedRefs.add(schema.$ref);
+    schema = resolveRef(schema.$ref, root);
+  }
+  if (schema.example !== undefined) return schema.example;
+  if (schema.default !== undefined) return schema.default;
+  if (Array.isArray(schema.examples) && schema.examples.length) return schema.examples[0];
+  if (Array.isArray(schema.enum) && schema.enum.length) return schema.enum[0];
+
+  const type = str(schema.type).toLowerCase();
+  if (type === 'string') {
+    const format = str(schema.format).toLowerCase();
+    if (format === 'date-time') return '2026-01-01T00:00:00.000Z';
+    if (format === 'date') return '2026-01-01';
+    if (format === 'email') return 'user@example.com';
+    if (format === 'uri' || format === 'url') return 'https://example.com';
+    if (format === 'uuid' || format === 'guid') return '00000000-0000-0000-0000-000000000000';
+    if (format === 'binary' || format === 'byte') return 'binary';
+    return 'string';
+  }
+  if (type === 'integer' || type === 'number') {
+    return typeof schema.minimum === 'number' ? schema.minimum : 0;
+  }
+  if (type === 'boolean') {
+    return true;
+  }
+  if (type === 'array') {
+    const itemExample = generateSchemaExample(schema.items, root, depth + 1, visitedRefs);
+    return itemExample !== undefined ? [itemExample] : [];
+  }
+  if (type === 'object' || schema.properties) {
+    const props = object(schema.properties);
+    const result: Record<string, unknown> = {};
+    for (const [propName, propSchema] of Object.entries(props)) {
+      result[propName] = generateSchemaExample(propSchema, root, depth + 1, visitedRefs);
+    }
+    return result;
+  }
+  return '';
+}
+
+function parseSecurityScheme(schemeObj: JsonObject): Auth | null {
+  const type = str(schemeObj.type).toLowerCase();
+  if (type === 'http') {
+    const scheme = str(schemeObj.scheme).toLowerCase();
+    if (scheme === 'bearer') return { type: 'bearer', token: '{{bearerToken}}' };
+    if (scheme === 'basic')
+      return { type: 'basic', username: '{{username}}', password: '{{password}}' };
+  } else if (type === 'basic') {
+    return { type: 'basic', username: '{{username}}', password: '{{password}}' };
+  } else if (type === 'apikey') {
+    const inVal = str(schemeObj.in).toLowerCase();
+    const nameVal = str(schemeObj.name, 'api_key');
+    return {
+      type: 'apikey',
+      key: nameVal,
+      value: '{{apiKey}}',
+      addTo: inVal === 'query' ? 'query' : 'header',
+    };
+  } else if (type === 'oauth2') {
+    return { type: 'oauth2', token: '{{accessToken}}' };
+  }
+  return null;
+}
+
+export function importOpenApi(source: JsonObject, warnings: string[]): Collection {
+  const info = object(source.info);
+  const name = str(info.title, 'OpenAPI Collection').trim() || 'OpenAPI Collection';
+  const collection = newCollection(name);
+  collection.description = description(info.description);
+
+  // Extract Base URL
+  const servers = list(source.servers);
+  let baseUrl = '';
+  if (servers.length) {
+    const firstServer = object(servers[0]);
+    let rawUrl = str(firstServer.url, '');
+    const vars = object(firstServer.variables);
+    for (const [k, v] of Object.entries(vars)) {
+      const defaultVal = str(object(v).default, '');
+      rawUrl = rawUrl.replace(new RegExp(`\\{${k}\\}`, 'g'), defaultVal);
+    }
+    baseUrl = rawUrl;
+  } else if (source.host) {
+    const schemes = list(source.schemes);
+    const scheme = schemes.length ? str(schemes[0], 'https') : 'https';
+    const host = str(source.host, 'api.example.com');
+    const basePath = str(source.basePath, '');
+    const cleanBasePath = basePath.startsWith('/') ? basePath : basePath ? `/${basePath}` : '';
+    baseUrl = `${scheme}://${host}${cleanBasePath}`;
+  }
+
+  if (baseUrl) {
+    baseUrl = baseUrl.replace(/\/+$/, '');
+    collection.variables.push(pair('baseUrl', baseUrl));
+  }
+
+  // Security definitions
+  const components = object(source.components);
+  const secSchemes = object(components.securitySchemes || source.securityDefinitions);
+
+  const globalSec = list(source.security);
+  if (globalSec.length) {
+    const firstSec = object(globalSec[0]);
+    const firstKey = Object.keys(firstSec)[0];
+    if (firstKey && secSchemes[firstKey]) {
+      const parsedAuth = parseSecurityScheme(object(secSchemes[firstKey]));
+      if (parsedAuth) collection.auth = parsedAuth;
+    }
+  }
+
+  // Tags -> Folders
+  const tagMap = new Map<string, string>();
+  for (const tagItem of list(source.tags)) {
+    const tagObj = object(tagItem);
+    const tagName = str(tagObj.name).trim();
+    if (tagName && !tagMap.has(tagName)) {
+      const folderId = uid();
+      tagMap.set(tagName, folderId);
+      collection.folders.push({
+        id: folderId,
+        name: tagName,
+        description: description(tagObj.description),
+        auth: { type: 'inherit' },
+        preScript: '',
+        postScript: '',
+      });
+    }
+  }
+
+  // Paths & Operations
+  const paths = object(source.paths);
+  const methods = ['get', 'post', 'put', 'delete', 'patch', 'head', 'options', 'trace'] as const;
+
+  for (const [pathKey, pathItemRaw] of Object.entries(paths)) {
+    if (pathKey.startsWith('x-')) continue;
+    let pathObj = object(pathItemRaw);
+    if (typeof pathObj.$ref === 'string') {
+      pathObj = resolveRef(pathObj.$ref, source);
+    }
+    const pathParams = list(pathObj.parameters);
+
+    for (const method of methods) {
+      const opRaw = pathObj[method];
+      if (!opRaw || typeof opRaw !== 'object') continue;
+      const op = object(opRaw);
+
+      const req = newRequest();
+      req.method = method.toUpperCase();
+      req.name = str(op.summary || op.operationId || `${req.method} ${pathKey}`).trim();
+      req.description = description(op.description);
+      req.collectionId = collection.id;
+
+      // Group into folder by tag
+      const opTags = list(op.tags);
+      if (opTags.length) {
+        const firstTag = str(opTags[0]).trim();
+        if (firstTag) {
+          if (!tagMap.has(firstTag)) {
+            const folderId = uid();
+            tagMap.set(firstTag, folderId);
+            collection.folders.push({
+              id: folderId,
+              name: firstTag,
+              description: '',
+              auth: { type: 'inherit' },
+              preScript: '',
+              postScript: '',
+            });
+          }
+          req.folderId = tagMap.get(firstTag);
+        }
+      }
+
+      // Format URL: convert {param} to :param
+      const cleanPath = pathKey.startsWith('/') ? pathKey : `/${pathKey}`;
+      const normalizedPath = cleanPath.replace(/\{([^}]+)\}/g, ':$1');
+      req.url = baseUrl ? `{{baseUrl}}${normalizedPath}` : normalizedPath;
+
+      // Parameters
+      const allParams = [...pathParams, ...list(op.parameters)];
+      const seenParam = new Set<string>();
+
+      for (const pRaw of allParams) {
+        let p = object(pRaw);
+        if (typeof p.$ref === 'string') {
+          p = resolveRef(p.$ref, source);
+        }
+        const pName = str(p.name).trim();
+        const pIn = str(p.in).toLowerCase();
+        if (!pName) continue;
+        const pKey = `${pIn}:${pName}`;
+        if (seenParam.has(pKey)) continue;
+        seenParam.add(pKey);
+
+        let pVal = '';
+        if (p.example !== undefined) pVal = str(p.example);
+        else if (p.default !== undefined) pVal = str(p.default);
+        else if (p.schema && typeof p.schema === 'object') {
+          const pSchema = object(p.schema);
+          if (pSchema.example !== undefined) pVal = str(pSchema.example);
+          else if (pSchema.default !== undefined) pVal = str(pSchema.default);
+        }
+        const pDesc = description(p.description);
+
+        if (pIn === 'query') {
+          req.params.push({
+            id: uid(),
+            key: pName,
+            value: pVal,
+            description: pDesc,
+            enabled: p.required !== false,
+          });
+        } else if (pIn === 'header') {
+          if (!['authorization', 'content-type', 'accept'].includes(pName.toLowerCase())) {
+            req.headers.push({
+              id: uid(),
+              key: pName,
+              value: pVal,
+              description: pDesc,
+              enabled: p.required !== false,
+            });
+          }
+        } else if (pIn === 'path') {
+          req.variables.push({
+            id: uid(),
+            key: pName,
+            value: pVal || '1',
+            description: pDesc,
+            enabled: true,
+          });
+        } else if (pIn === 'body') {
+          // Swagger 2 body parameter
+          const schema = p.schema ? object(p.schema) : {};
+          const ex = generateSchemaExample(schema, source);
+          req.body = {
+            mode: 'raw',
+            raw: typeof ex === 'string' ? ex : JSON.stringify(ex, null, 2),
+            fields: [],
+            language: 'json',
+          };
+          if (!req.headers.some((h) => h.key.toLowerCase() === 'content-type')) {
+            req.headers.push(pair('Content-Type', 'application/json'));
+          }
+        } else if (pIn === 'formdata') {
+          // Swagger 2 formData parameter
+          const consumes = list(op.consumes || source.consumes).map(String);
+          const isMultipart = consumes.some((c) => c.includes('multipart'));
+          req.body.mode = isMultipart ? 'form-data' : 'urlencoded';
+          req.body.fields.push({
+            id: uid(),
+            key: pName,
+            value: pVal,
+            description: pDesc,
+            enabled: p.required !== false,
+            type: str(p.type) === 'file' ? 'file' : 'text',
+          });
+        }
+      }
+
+      // OpenAPI 3 requestBody
+      if (op.requestBody && typeof op.requestBody === 'object') {
+        let rb = object(op.requestBody);
+        if (typeof rb.$ref === 'string') {
+          rb = resolveRef(rb.$ref, source);
+        }
+        const content = object(rb.content);
+        if (content['application/json']) {
+          const jsonContent = object(content['application/json']);
+          const schema = jsonContent.schema ? object(jsonContent.schema) : {};
+          const ex =
+            jsonContent.example !== undefined
+              ? jsonContent.example
+              : generateSchemaExample(schema, source);
+          req.body = {
+            mode: 'raw',
+            raw: typeof ex === 'string' ? ex : JSON.stringify(ex, null, 2),
+            fields: [],
+            language: 'json',
+          };
+          if (!req.headers.some((h) => h.key.toLowerCase() === 'content-type')) {
+            req.headers.push(pair('Content-Type', 'application/json'));
+          }
+        } else if (content['application/x-www-form-urlencoded']) {
+          const formContent = object(content['application/x-www-form-urlencoded']);
+          const schema = formContent.schema ? object(formContent.schema) : {};
+          const props = object(schema.properties);
+          req.body.mode = 'urlencoded';
+          for (const [fName, fSchema] of Object.entries(props)) {
+            const val = generateSchemaExample(fSchema, source);
+            req.body.fields.push(pair(fName, str(val)));
+          }
+        } else if (content['multipart/form-data']) {
+          const formContent = object(content['multipart/form-data']);
+          const schema = formContent.schema ? object(formContent.schema) : {};
+          const props = object(schema.properties);
+          req.body.mode = 'form-data';
+          for (const [fName, fSchema] of Object.entries(props)) {
+            const fObj = object(fSchema);
+            const isFile =
+              str(fObj.format) === 'binary' ||
+              (str(fObj.type) === 'string' && str(fObj.format) === 'binary');
+            const val = generateSchemaExample(fSchema, source);
+            req.body.fields.push({
+              id: uid(),
+              key: fName,
+              value: isFile ? '' : str(val),
+              enabled: true,
+              type: isFile ? 'file' : 'text',
+            });
+          }
+        } else {
+          const firstType = Object.keys(content)[0];
+          if (firstType) {
+            const cObj = object(content[firstType]);
+            const ex =
+              cObj.example !== undefined
+                ? cObj.example
+                : generateSchemaExample(cObj.schema, source);
+            req.body = {
+              mode: 'raw',
+              raw: typeof ex === 'string' ? ex : JSON.stringify(ex, null, 2),
+              fields: [],
+              language: firstType.includes('json')
+                ? 'json'
+                : firstType.includes('xml')
+                  ? 'xml'
+                  : firstType.includes('html')
+                    ? 'html'
+                    : 'text',
+            };
+            if (!req.headers.some((h) => h.key.toLowerCase() === 'content-type')) {
+              req.headers.push(pair('Content-Type', firstType));
+            }
+          }
+        }
+      }
+
+      // Security override per operation
+      if (op.security && Array.isArray(op.security)) {
+        if (op.security.length === 0) {
+          req.auth = { type: 'none' };
+        } else {
+          const opFirstSec = object(op.security[0]);
+          const opFirstKey = Object.keys(opFirstSec)[0];
+          if (opFirstKey && secSchemes[opFirstKey]) {
+            const parsed = parseSecurityScheme(object(secSchemes[opFirstKey]));
+            if (parsed) req.auth = parsed;
+          }
+        }
+      }
+
+      collection.requests.push(req);
+    }
+  }
+
+  return collection;
+}
+
 /** Import data only: never executes shell code, fetches remote content, or opens file references. */
 export function importText(text: string): ImportResult {
   if (text.length > MAX_IMPORT) throw new Error('Import exceeds the 20 MB text limit.');
   const sourceText = text.replace(/^\uFEFF/, '').trim();
-  if (!sourceText) throw new Error('Paste a Postman collection, environment, or cURL command.');
+  if (!sourceText)
+    throw new Error(
+      'Paste an OpenAPI specification, Postman collection, environment, or cURL command.',
+    );
   const result: ImportResult = { collections: [], environments: [], requests: [], warnings: [] };
   if (/^curl(?:\.exe)?(?:\s|$)/i.test(sourceText)) {
     result.requests.push(importCurl(sourceText, result.warnings));
@@ -445,13 +842,22 @@ export function importText(text: string): ImportResult {
   try {
     parsed = JSON.parse(sourceText);
   } catch {
-    throw new Error('Import must be valid JSON or a cURL command.');
+    try {
+      parsed = yamlLoad(sourceText, { json: true });
+    } catch {
+      throw new Error('Import must be valid JSON, YAML, or a cURL command.');
+    }
+  }
+  if (!parsed || typeof parsed !== 'object') {
+    throw new Error('Import content must be an object.');
   }
   validateJson(parsed);
   const source = object(parsed);
-  if (source.info && source.item)
+  if (isOpenApi(source)) {
+    result.collections.push(importOpenApi(source, result.warnings));
+  } else if (source.info && source.item) {
     result.collections.push(importCollection(source, result.warnings));
-  else if (Array.isArray(source.values) && typeof source.name === 'string') {
+  } else if (Array.isArray(source.values) && typeof source.name === 'string') {
     result.environments.push({
       id: uid(),
       name: source.name,
@@ -476,7 +882,10 @@ export function importText(text: string): ImportResult {
       result.warnings,
       'Environment',
     );
-  } else throw new Error('JSON is not a recognized Postman collection or environment.');
+  } else
+    throw new Error(
+      'Content is not a recognized OpenAPI specification, Postman collection, or environment.',
+    );
   return result;
 }
 
@@ -656,6 +1065,224 @@ export function exportEnvironment(environment: Environment): object {
     _postman_exported_at: new Date().toISOString(),
     _postman_exported_using: 'SendIt!/1.0',
   };
+}
+
+export function exportOpenApi(collection: Collection): JsonObject {
+  const openapi: JsonObject = {
+    openapi: '3.0.3',
+    info: {
+      title: collection.name || 'API',
+      description: collection.description || undefined,
+      version: '1.0.0',
+    },
+  };
+
+  const baseVar = collection.variables.find((v) => v.enabled && v.key === 'baseUrl');
+  let baseUrl = baseVar?.value?.trim() || '';
+  if (!baseUrl) {
+    for (const req of collection.requests) {
+      if (/^https?:\/\//i.test(req.url)) {
+        try {
+          const u = new URL(req.url);
+          baseUrl = u.origin;
+          break;
+        } catch {}
+      }
+    }
+  }
+
+  if (baseUrl) {
+    openapi.servers = [{ url: baseUrl, description: 'Default server' }];
+  }
+
+  const folderMap = new Map<string, string>();
+  const tags: JsonObject[] = [];
+  for (const folder of collection.folders) {
+    folderMap.set(folder.id, folder.name);
+    tags.push({
+      name: folder.name,
+      description: folder.description || undefined,
+    });
+  }
+  if (tags.length) {
+    openapi.tags = tags;
+  }
+
+  const securitySchemes: JsonObject = {};
+  if (collection.auth.type === 'bearer') {
+    securitySchemes.bearerAuth = { type: 'http', scheme: 'bearer' };
+    openapi.security = [{ bearerAuth: [] }];
+  } else if (collection.auth.type === 'basic') {
+    securitySchemes.basicAuth = { type: 'http', scheme: 'basic' };
+    openapi.security = [{ basicAuth: [] }];
+  } else if (collection.auth.type === 'apikey') {
+    securitySchemes.apiKeyAuth = {
+      type: 'apiKey',
+      name: collection.auth.key || 'api_key',
+      in: collection.auth.addTo === 'query' ? 'query' : 'header',
+    };
+    openapi.security = [{ apiKeyAuth: [] }];
+  }
+
+  const paths: JsonObject = {};
+
+  for (const req of collection.requests) {
+    let rawPath = req.url;
+    if (rawPath.startsWith('{{baseUrl}}')) {
+      rawPath = rawPath.replace('{{baseUrl}}', '');
+    } else if (baseUrl && rawPath.startsWith(baseUrl)) {
+      rawPath = rawPath.slice(baseUrl.length);
+    } else if (/^https?:\/\/[^/]+/i.test(rawPath)) {
+      rawPath = rawPath.replace(/^https?:\/\/[^/]+/i, '');
+    }
+    rawPath = rawPath.split('?')[0];
+    if (!rawPath.startsWith('/')) rawPath = '/' + rawPath;
+
+    const openApiPath = rawPath
+      .replace(/:([a-zA-Z0-9_-]+)/g, '{$1}')
+      .replace(/\{\{([a-zA-Z0-9_-]+)\}\}/g, '{$1}');
+
+    if (!paths[openApiPath]) paths[openApiPath] = {};
+    const pathItem = paths[openApiPath] as JsonObject;
+
+    const method = req.method.toLowerCase();
+    const operation: JsonObject = {
+      summary: req.name,
+      description: req.description || undefined,
+      responses: {
+        '200': {
+          description: 'Successful response',
+        },
+      },
+    };
+
+    if (req.folderId && folderMap.has(req.folderId)) {
+      operation.tags = [folderMap.get(req.folderId)!];
+    }
+
+    const parameters: JsonObject[] = [];
+
+    const pathMatches = [...openApiPath.matchAll(/\{([^}]+)\}/g)].map((m) => m[1]);
+    for (const p of pathMatches) {
+      parameters.push({
+        name: p,
+        in: 'path',
+        required: true,
+        schema: { type: 'string' },
+      });
+    }
+
+    for (const q of req.params) {
+      if (q.key) {
+        parameters.push({
+          name: q.key,
+          in: 'query',
+          required: false,
+          description: q.description || undefined,
+          schema: { type: 'string', default: q.value || undefined },
+        });
+      }
+    }
+
+    for (const h of req.headers) {
+      if (h.key && !['authorization', 'content-type', 'accept'].includes(h.key.toLowerCase())) {
+        parameters.push({
+          name: h.key,
+          in: 'header',
+          required: false,
+          description: h.description || undefined,
+          schema: { type: 'string', default: h.value || undefined },
+        });
+      }
+    }
+
+    if (parameters.length) {
+      operation.parameters = parameters;
+    }
+
+    if (['post', 'put', 'patch'].includes(method)) {
+      if (req.body.mode === 'raw' && req.body.raw.trim()) {
+        let parsedJson: unknown;
+        try {
+          parsedJson = JSON.parse(req.body.raw);
+        } catch {}
+        if (parsedJson !== undefined) {
+          operation.requestBody = {
+            content: {
+              'application/json': {
+                schema: { type: 'object', example: parsedJson },
+              },
+            },
+          };
+        } else {
+          operation.requestBody = {
+            content: {
+              'text/plain': {
+                schema: { type: 'string', example: req.body.raw },
+              },
+            },
+          };
+        }
+      } else if (req.body.mode === 'urlencoded' && req.body.fields.length) {
+        const props: JsonObject = {};
+        for (const f of req.body.fields) {
+          if (f.key) props[f.key] = { type: 'string', default: f.value || undefined };
+        }
+        operation.requestBody = {
+          content: {
+            'application/x-www-form-urlencoded': {
+              schema: { type: 'object', properties: props },
+            },
+          },
+        };
+      } else if (req.body.mode === 'form-data' && req.body.fields.length) {
+        const props: JsonObject = {};
+        for (const f of req.body.fields) {
+          if (f.key) {
+            props[f.key] =
+              f.type === 'file'
+                ? { type: 'string', format: 'binary' }
+                : { type: 'string', default: f.value || undefined };
+          }
+        }
+        operation.requestBody = {
+          content: {
+            'multipart/form-data': {
+              schema: { type: 'object', properties: props },
+            },
+          },
+        };
+      }
+    }
+
+    if (req.auth && req.auth.type !== 'inherit') {
+      if (req.auth.type === 'none') {
+        operation.security = [];
+      } else if (req.auth.type === 'bearer') {
+        securitySchemes.bearerAuth = { type: 'http', scheme: 'bearer' };
+        operation.security = [{ bearerAuth: [] }];
+      } else if (req.auth.type === 'basic') {
+        securitySchemes.basicAuth = { type: 'http', scheme: 'basic' };
+        operation.security = [{ basicAuth: [] }];
+      } else if (req.auth.type === 'apikey') {
+        securitySchemes.apiKeyAuth = {
+          type: 'apiKey',
+          name: req.auth.key || 'api_key',
+          in: req.auth.addTo === 'query' ? 'query' : 'header',
+        };
+        operation.security = [{ apiKeyAuth: [] }];
+      }
+    }
+
+    pathItem[method] = operation;
+  }
+
+  openapi.paths = paths;
+  if (Object.keys(securitySchemes).length) {
+    openapi.components = { securitySchemes };
+  }
+
+  return openapi;
 }
 
 function tokenizeCurl(command: string): string[] {

@@ -220,6 +220,7 @@ export interface Bridge {
   importFile(): Promise<ImportResult | null>;
   importText(text: string): Promise<ImportResult>;
   exportCollection(collection: Collection): Promise<boolean>;
+  exportOpenApi(collection: Collection, format?: 'yaml' | 'json'): Promise<boolean>;
   exportEnvironment(environment: Environment): Promise<boolean>;
   saveFile(name: string, content: string, base64?: boolean): Promise<boolean>;
   backup(): Promise<boolean>;

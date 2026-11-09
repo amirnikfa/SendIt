@@ -272,13 +272,35 @@ export default function App() {
       action: () => setDialog({ kind: 'collection', id: collection.id }),
     },
     {
-      label: 'Export collection',
+      label: 'Export collection (Postman v2.1)',
       icon: <Download size={13} />,
       action: () =>
         void window.workbench
           .exportCollection(collection)
           .then((ok) => {
-            if (ok) store.notify('Collection exported');
+            if (ok) store.notify('Collection exported (Postman v2.1)');
+          })
+          .catch((e) => store.notify(String(e), 'error')),
+    },
+    {
+      label: 'Export OpenAPI 3.0 (YAML)',
+      icon: <FileJson2 size={13} />,
+      action: () =>
+        void window.workbench
+          .exportOpenApi(collection, 'yaml')
+          .then((ok) => {
+            if (ok) store.notify('OpenAPI (YAML) exported');
+          })
+          .catch((e) => store.notify(String(e), 'error')),
+    },
+    {
+      label: 'Export OpenAPI 3.0 (JSON)',
+      icon: <FileJson2 size={13} />,
+      action: () =>
+        void window.workbench
+          .exportOpenApi(collection, 'json')
+          .then((ok) => {
+            if (ok) store.notify('OpenAPI (JSON) exported');
           })
           .catch((e) => store.notify(String(e), 'error')),
     },

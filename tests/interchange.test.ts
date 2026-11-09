@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
   exportCollection,
   exportEnvironment,
+  exportOpenApi,
   importText,
+  isOpenApi,
   toCurl,
   toHttp,
   toMarkdown,
@@ -576,5 +578,362 @@ describe('cURL import and request snippets', () => {
     expect(markdown).not.toContain('private');
     expect(markdown).not.toContain('supersecret');
     expect(markdown).toContain('REDACTED');
+  });
+
+  describe('OpenAPI & Swagger (v3 & v2) import and export', () => {
+    it('detects OpenAPI and Swagger specifications', () => {
+      expect(isOpenApi({ openapi: '3.0.0', info: { title: 'Test' }, paths: {} })).toBe(true);
+      expect(isOpenApi({ swagger: '2.0', info: { title: 'Test' }, paths: {} })).toBe(true);
+      expect(isOpenApi({ info: { title: 'Test' }, paths: {} })).toBe(true);
+      expect(isOpenApi({ info: { name: 'Postman' }, item: [] })).toBe(false);
+      expect(isOpenApi({ values: [] })).toBe(false);
+    });
+
+    it('imports an OpenAPI 3.0 JSON specification with tags, servers, parameters, bodies, and auth', () => {
+      const openApiJson = JSON.stringify({
+        openapi: '3.0.3',
+        info: {
+          title: 'Pet Store API',
+          description: 'A sample pet store service',
+          version: '1.0.0',
+        },
+        servers: [{ url: 'https://api.petstore.test/v1', description: 'Production server' }],
+        tags: [
+          { name: 'Pets', description: 'Pet operations' },
+          { name: 'Store', description: 'Store orders' },
+        ],
+        components: {
+          securitySchemes: {
+            bearerAuth: {
+              type: 'http',
+              scheme: 'bearer',
+            },
+            apiKeyHeader: {
+              type: 'apiKey',
+              name: 'X-API-KEY',
+              in: 'header',
+            },
+          },
+          schemas: {
+            Pet: {
+              type: 'object',
+              required: ['id', 'name'],
+              properties: {
+                id: { type: 'integer', example: 101 },
+                name: { type: 'string', example: 'Doggie' },
+                status: { type: 'string', enum: ['available', 'pending', 'sold'] },
+              },
+            },
+          },
+        },
+        security: [{ bearerAuth: [] }],
+        paths: {
+          '/pets': {
+            get: {
+              tags: ['Pets'],
+              summary: 'List all pets',
+              description: 'Returns all pets matching query',
+              parameters: [
+                {
+                  name: 'status',
+                  in: 'query',
+                  required: false,
+                  description: 'Status filter',
+                  schema: { type: 'string', default: 'available' },
+                },
+                {
+                  name: 'limit',
+                  in: 'query',
+                  required: false,
+                  schema: { type: 'integer', default: 20 },
+                },
+              ],
+            },
+            post: {
+              tags: ['Pets'],
+              summary: 'Create a pet',
+              requestBody: {
+                required: true,
+                content: {
+                  'application/json': {
+                    schema: { $ref: '#/components/schemas/Pet' },
+                  },
+                },
+              },
+            },
+          },
+          '/pets/{petId}': {
+            get: {
+              tags: ['Pets'],
+              summary: 'Get pet by ID',
+              parameters: [
+                {
+                  name: 'petId',
+                  in: 'path',
+                  required: true,
+                  description: 'The ID of the pet',
+                  schema: { type: 'integer', default: 101 },
+                },
+              ],
+              security: [{ apiKeyHeader: [] }],
+            },
+          },
+          '/store/order': {
+            post: {
+              tags: ['Store'],
+              summary: 'Place an order',
+              requestBody: {
+                content: {
+                  'application/x-www-form-urlencoded': {
+                    schema: {
+                      type: 'object',
+                      properties: {
+                        petId: { type: 'integer', default: 101 },
+                        quantity: { type: 'integer', default: 1 },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+
+      const result = importText(openApiJson);
+      expect(result.collections).toHaveLength(1);
+      const collection = result.collections[0];
+      expect(collection.name).toBe('Pet Store API');
+      expect(collection.description).toBe('A sample pet store service');
+
+      // Base URL in variables
+      const baseUrlVar = collection.variables.find((v) => v.key === 'baseUrl');
+      expect(baseUrlVar).toBeDefined();
+      expect(baseUrlVar?.value).toBe('https://api.petstore.test/v1');
+
+      // Global auth
+      expect(collection.auth.type).toBe('bearer');
+      expect(collection.auth.token).toBe('{{bearerToken}}');
+
+      // Tags -> Folders
+      expect(collection.folders).toHaveLength(2);
+      const petsFolder = collection.folders.find((f) => f.name === 'Pets');
+      const storeFolder = collection.folders.find((f) => f.name === 'Store');
+      expect(petsFolder).toBeDefined();
+      expect(storeFolder).toBeDefined();
+
+      // Requests
+      expect(collection.requests).toHaveLength(4);
+
+      // GET /pets
+      const listPetsReq = collection.requests.find((r) => r.name === 'List all pets');
+      expect(listPetsReq).toBeDefined();
+      expect(listPetsReq?.method).toBe('GET');
+      expect(listPetsReq?.url).toBe('{{baseUrl}}/pets');
+      expect(listPetsReq?.folderId).toBe(petsFolder?.id);
+      expect(listPetsReq?.params).toHaveLength(2);
+      expect(listPetsReq?.params[0].key).toBe('status');
+      expect(listPetsReq?.params[0].value).toBe('available');
+
+      // POST /pets with JSON body referencing schema
+      const createPetReq = collection.requests.find((r) => r.name === 'Create a pet');
+      expect(createPetReq).toBeDefined();
+      expect(createPetReq?.method).toBe('POST');
+      expect(createPetReq?.body.mode).toBe('raw');
+      expect(createPetReq?.body.language).toBe('json');
+      const bodyParsed = JSON.parse(createPetReq?.body.raw || '{}');
+      expect(bodyParsed.id).toBe(101);
+      expect(bodyParsed.name).toBe('Doggie');
+
+      // GET /pets/{petId} with path parameter and security override
+      const getPetReq = collection.requests.find((r) => r.name === 'Get pet by ID');
+      expect(getPetReq).toBeDefined();
+      expect(getPetReq?.url).toBe('{{baseUrl}}/pets/:petId');
+      expect(getPetReq?.auth.type).toBe('apikey');
+      expect(getPetReq?.auth.key).toBe('X-API-KEY');
+      expect(getPetReq?.auth.addTo).toBe('header');
+
+      // POST /store/order with urlencoded body
+      const orderReq = collection.requests.find((r) => r.name === 'Place an order');
+      expect(orderReq).toBeDefined();
+      expect(orderReq?.folderId).toBe(storeFolder?.id);
+      expect(orderReq?.body.mode).toBe('urlencoded');
+      expect(orderReq?.body.fields.some((f) => f.key === 'petId')).toBe(true);
+    });
+
+    it('imports an OpenAPI 3.0 specification from YAML text', () => {
+      const yamlText = `
+openapi: 3.0.0
+info:
+  title: Users Service
+  description: YAML based user management API
+  version: 2.1.0
+servers:
+  - url: https://users.example.com
+paths:
+  /users:
+    get:
+      summary: Retrieve all users
+      parameters:
+        - name: role
+          in: query
+          schema:
+            type: string
+            default: admin
+`;
+      const result = importText(yamlText);
+      expect(result.collections).toHaveLength(1);
+      const collection = result.collections[0];
+      expect(collection.name).toBe('Users Service');
+      expect(collection.variables.find((v) => v.key === 'baseUrl')?.value).toBe(
+        'https://users.example.com',
+      );
+      expect(collection.requests).toHaveLength(1);
+      expect(collection.requests[0].name).toBe('Retrieve all users');
+      expect(collection.requests[0].params[0].key).toBe('role');
+      expect(collection.requests[0].params[0].value).toBe('admin');
+    });
+
+    it('imports a Swagger 2.0 specification with host, basePath, and parameters', () => {
+      const swaggerJson = JSON.stringify({
+        swagger: '2.0',
+        info: {
+          title: 'Legacy Inventory API',
+          version: '1.0.0',
+        },
+        host: 'inventory.legacy.test',
+        basePath: '/api/v2',
+        schemes: ['https'],
+        securityDefinitions: {
+          basicAuth: {
+            type: 'basic',
+          },
+        },
+        security: [{ basicAuth: [] }],
+        paths: {
+          '/items': {
+            get: {
+              summary: 'Get items',
+              parameters: [
+                {
+                  name: 'category',
+                  in: 'query',
+                  type: 'string',
+                  default: 'hardware',
+                },
+              ],
+            },
+            post: {
+              summary: 'Add item',
+              consumes: ['application/json'],
+              parameters: [
+                {
+                  name: 'body',
+                  in: 'body',
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      sku: { type: 'string', example: 'ITEM-99' },
+                      count: { type: 'integer', example: 5 },
+                    },
+                  },
+                },
+              ],
+            },
+          },
+        },
+      });
+
+      const result = importText(swaggerJson);
+      expect(result.collections).toHaveLength(1);
+      const collection = result.collections[0];
+      expect(collection.name).toBe('Legacy Inventory API');
+      expect(collection.variables.find((v) => v.key === 'baseUrl')?.value).toBe(
+        'https://inventory.legacy.test/api/v2',
+      );
+      expect(collection.auth.type).toBe('basic');
+      expect(collection.requests).toHaveLength(2);
+
+      const addReq = collection.requests.find((r) => r.name === 'Add item');
+      expect(addReq?.body.mode).toBe('raw');
+      expect(addReq?.body.raw).toContain('ITEM-99');
+    });
+
+    it('exports a collection to a valid OpenAPI 3.0 document', () => {
+      const collection = newCollection('Payment Gateway');
+      collection.description = 'Processes credit and debit payments';
+      collection.variables.push(pair('baseUrl', 'https://pay.example.test/v1'));
+      collection.auth = { type: 'bearer', token: '{{token}}' };
+
+      const folder = {
+        id: 'f-charges',
+        name: 'Charges',
+        description: 'Payment transactions',
+        auth: { type: 'inherit' as const },
+        preScript: '',
+        postScript: '',
+      };
+      collection.folders.push(folder);
+
+      const req1 = newRequest('Create charge');
+      req1.method = 'POST';
+      req1.url = '{{baseUrl}}/charges';
+      req1.folderId = 'f-charges';
+      req1.body = {
+        mode: 'raw',
+        language: 'json',
+        raw: JSON.stringify({ amount: 5000, currency: 'USD' }),
+        fields: [],
+      };
+      collection.requests.push(req1);
+
+      const req2 = newRequest('Get charge status');
+      req2.method = 'GET';
+      req2.url = '{{baseUrl}}/charges/:chargeId';
+      req2.folderId = 'f-charges';
+      req2.params = [pair('expand', 'customer')];
+      collection.requests.push(req2);
+
+      const openapi = exportOpenApi(collection);
+      expect(openapi.openapi).toBe('3.0.3');
+      expect((openapi.info as any).title).toBe('Payment Gateway');
+      expect((openapi.servers as any)[0].url).toBe('https://pay.example.test/v1');
+      expect((openapi.tags as any)[0].name).toBe('Charges');
+
+      const paths = openapi.paths as any;
+      expect(paths['/charges']).toBeDefined();
+      expect(paths['/charges'].post.summary).toBe('Create charge');
+      expect(paths['/charges'].post.tags).toEqual(['Charges']);
+      expect(paths['/charges'].post.requestBody.content['application/json'].schema.example).toEqual(
+        {
+          amount: 5000,
+          currency: 'USD',
+        },
+      );
+
+      expect(paths['/charges/{chargeId}']).toBeDefined();
+      expect(paths['/charges/{chargeId}'].get.summary).toBe('Get charge status');
+      const params = paths['/charges/{chargeId}'].get.parameters;
+      expect(params.some((p: any) => p.name === 'chargeId' && p.in === 'path')).toBe(true);
+      expect(params.some((p: any) => p.name === 'expand' && p.in === 'query')).toBe(true);
+    });
+
+    it('round-trips an exported collection back through importText', () => {
+      const collection = newCollection('Roundtrip API');
+      collection.variables.push(pair('baseUrl', 'https://roundtrip.test'));
+      const req = newRequest('Ping');
+      req.method = 'GET';
+      req.url = '{{baseUrl}}/ping';
+      collection.requests.push(req);
+
+      const openApiObj = exportOpenApi(collection);
+      const jsonText = JSON.stringify(openApiObj, null, 2);
+
+      const reimported = importText(jsonText);
+      expect(reimported.collections).toHaveLength(1);
+      expect(reimported.collections[0].name).toBe('Roundtrip API');
+      expect(reimported.collections[0].requests[0].name).toBe('Ping');
+      expect(reimported.collections[0].requests[0].url).toBe('{{baseUrl}}/ping');
+    });
   });
 });

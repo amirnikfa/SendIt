@@ -30,7 +30,13 @@ import {
   prepareCertificateFile,
   validateClientCertificate,
 } from '../networking/certificates';
-import { importText, exportCollection, exportEnvironment } from '../services/interchange';
+import {
+  importText,
+  exportCollection,
+  exportEnvironment,
+  exportOpenApi,
+} from '../services/interchange';
+import { dump as yamlDump } from 'js-yaml';
 
 // The portable launcher extracts program files to TEMP; persistent data belongs beside the launcher.
 const dataRoot =
@@ -103,7 +109,12 @@ async function readDialog(title: string) {
     title,
     properties: ['openFile'],
     filters: [
-      { name: 'JSON or text', extensions: ['json', 'txt'] },
+      {
+        name: 'API Specifications & Collections',
+        extensions: ['json', 'yaml', 'yml', 'txt'],
+      },
+      { name: 'JSON files', extensions: ['json'] },
+      { name: 'YAML files', extensions: ['yaml', 'yml'] },
       { name: 'All files', extensions: ['*'] },
     ],
   });
@@ -215,6 +226,21 @@ function registerIpc() {
       `${collection.name}.postman_collection.json`,
       JSON.stringify(exportCollection(collection), null, 2),
       'Export collection (may include credentials)',
+    );
+  });
+  handle('collection:export-openapi', (value, formatValue) => {
+    const collection = collectionSchema.parse(boundedInput(value));
+    const format = formatValue === 'json' ? 'json' : 'yaml';
+    const openapi = exportOpenApi(collection);
+    const content =
+      format === 'json'
+        ? JSON.stringify(openapi, null, 2)
+        : yamlDump(openapi, { indent: 2, lineWidth: -1, noRefs: true });
+    const extension = format === 'json' ? 'json' : 'yaml';
+    return writeDialog(
+      `${collection.name}.openapi.${extension}`,
+      content,
+      `Export OpenAPI 3.0 (${format.toUpperCase()})`,
     );
   });
   handle('environment:export', (value) => {
