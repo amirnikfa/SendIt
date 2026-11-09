@@ -27,12 +27,15 @@ import {
 } from '../src/shared/certificates';
 import {
   defaultSettings,
+  initialState,
+  newCollection,
   newRequest,
   type CertificateFile,
   type ClientCertificate,
   type ExecutionInput,
   type LiveEvent,
 } from '../src/shared/models';
+import { requestContext } from '../src/renderer/store';
 import { settingsSchema, clientCertificateSchema } from '../src/shared/validation';
 
 const servers: Server[] = [];
@@ -831,7 +834,9 @@ describe('custom CA and mutual TLS', () => {
     baseInput.request.url = otherUrl;
     baseInput.settings.verifyTls = true;
     baseInput.settings.tls.caEnabled = false;
-    expect((await engine.execute(baseInput)).response.error).toMatch(/self.signed|unable to verify/i);
+    expect((await engine.execute(baseInput)).response.error).toMatch(
+      /self.signed|unable to verify/i,
+    );
 
     // Option 1: Client certificate with verifyServerCertificate: false
     const opt1Input = input(false);
@@ -882,7 +887,73 @@ describe('custom CA and mutual TLS', () => {
     for (const testInput of [opt1Input, opt3Input, opt4Input]) {
       const strictInput = structuredClone(testInput);
       strictInput.request.verifyTls = true;
-      expect((await engine.execute(strictInput)).response.error).toMatch(/self.signed|unable to verify/i);
+      expect((await engine.execute(strictInput)).response.error).toMatch(
+        /self.signed|unable to verify/i,
+      );
     }
+  });
+
+  it('preserves collection context and verifyTls when request is called from history', async () => {
+    const engine = new HttpEngine();
+    const appState = initialState();
+    const collection = newCollection('Test TLS Collection');
+    collection.verifyTls = false;
+    const collReq = newRequest();
+    collReq.url = otherUrl;
+    collReq.collectionId = collection.id;
+    collection.requests.push(collReq);
+    appState.workspaces[0].collections.push(collection);
+
+    // 1. Run from within collection: requestContext inherits verifyTls: false
+    const collectionContext = requestContext(appState, structuredClone(collReq));
+    expect(collectionContext.request.verifyTls).toBe(false);
+    const collectionResult = await engine.execute(collectionContext);
+    expect(collectionResult.response.status).toBe(200);
+    expect(collectionResult.response.error).toBeUndefined();
+
+    // 2. Saved to history with effective verifyTls and collectionId
+    const historyRequest = structuredClone(collReq);
+    if (
+      historyRequest.verifyTls === undefined &&
+      collectionContext.request.verifyTls !== undefined
+    ) {
+      historyRequest.verifyTls = collectionContext.request.verifyTls;
+    }
+    const historyEntry = {
+      id: 'hist-1',
+      at: new Date().toISOString(),
+      request: historyRequest,
+      status: collectionResult.response.status,
+      duration: collectionResult.response.duration,
+      error: collectionResult.response.error,
+    };
+    appState.workspaces[0].history.unshift(historyEntry);
+
+    // 3. Opened from history: preserves collectionId, folderId, and verifyTls
+    const openedFromHistory = {
+      ...historyEntry.request,
+      id: 'tab-req-1',
+      collectionId: historyEntry.request.collectionId,
+      folderId: historyEntry.request.folderId,
+      verifyTls: historyEntry.request.verifyTls,
+    };
+    expect(openedFromHistory.collectionId).toBe(collection.id);
+    expect(openedFromHistory.verifyTls).toBe(false);
+
+    // 4. Executed from history: inherits collection context and succeeds without CA certificate error
+    const historyContext = requestContext(appState, structuredClone(openedFromHistory));
+    expect(historyContext.request.verifyTls).toBe(false);
+    const historyResult = await engine.execute(historyContext);
+    expect(historyResult.response.status).toBe(200);
+    expect(historyResult.response.error).toBeUndefined();
+
+    // 5. Even if collection is removed, the request from history still maintains verifyTls: false and succeeds
+    const appStateNoCollection = structuredClone(appState);
+    appStateNoCollection.workspaces[0].collections = [];
+    const orphanContext = requestContext(appStateNoCollection, structuredClone(openedFromHistory));
+    expect(orphanContext.request.verifyTls).toBe(false);
+    const orphanResult = await engine.execute(orphanContext);
+    expect(orphanResult.response.status).toBe(200);
+    expect(orphanResult.response.error).toBeUndefined();
   });
 });

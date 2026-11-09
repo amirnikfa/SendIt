@@ -974,8 +974,9 @@ export default function App() {
                             const r = {
                               ...h.request,
                               id: uid(),
-                              collectionId: undefined,
-                              folderId: undefined,
+                              collectionId: h.request.collectionId,
+                              folderId: h.request.folderId,
+                              verifyTls: h.request.verifyTls,
                             };
                             store.openRequest(r);
                           }}

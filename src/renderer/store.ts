@@ -272,10 +272,14 @@ export const useStore = create<Store>((set, get) => ({
           context.collectionVariables,
           result.collectionVariables,
         );
+      const historyRequest = copy(request);
+      if (historyRequest.verifyTls === undefined && context.request.verifyTls !== undefined) {
+        historyRequest.verifyTls = context.request.verifyTls;
+      }
       ws.history.unshift({
         id: uid(),
         at: new Date().toISOString(),
-        request: copy(request),
+        request: historyRequest,
         status: result.response.status,
         duration: result.response.duration,
         error: result.response.error,

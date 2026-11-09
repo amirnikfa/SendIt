@@ -787,6 +787,10 @@ kbd {
 .sidebar-empty-icon {
   width: 49px;
   height: 49px;
+  min-width: 49px;
+  min-height: 49px;
+  aspect-ratio: 1 / 1;
+  flex-shrink: 0;
   background: var(--raised);
   border: 1px solid var(--border);
   border-radius: 13px;
@@ -794,6 +798,9 @@ kbd {
   place-items: center;
   margin-bottom: 16px;
   color: var(--faint);
+}
+.sidebar-empty-icon svg {
+  flex-shrink: 0;
 }
 .sidebar-empty h3 {
   font-size: 11px;
@@ -1835,17 +1842,22 @@ kbd {
 .empty-state {
   display: flex;
   flex: 1;
-  min-height: 130px;
+  min-height: 0;
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  padding: 25px;
+  padding: 16px 25px;
   text-align: center;
   color: var(--muted);
+  overflow-y: auto;
 }
 .empty-icon {
   width: 62px;
   height: 62px;
+  min-width: 62px;
+  min-height: 62px;
+  aspect-ratio: 1 / 1;
+  flex-shrink: 0;
   border: 1px solid var(--border-soft);
   background: var(--bg-alt);
   border-radius: 18px;
@@ -1855,6 +1867,14 @@ kbd {
   margin-bottom: 17px;
   color: var(--faint);
   box-shadow: 0 4px 12px #00000008;
+}
+.empty-icon svg {
+  flex-shrink: 0;
+}
+.empty-state h3,
+.empty-state p,
+.keyboard-hint {
+  flex-shrink: 0;
 }
 .empty-state h3 {
   font-size: 13px;
@@ -3349,6 +3369,10 @@ kbd {
   .empty-icon {
     width: 44px;
     height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    aspect-ratio: 1 / 1;
+    flex-shrink: 0;
     border-radius: 12px;
     margin-bottom: 11px;
   }
